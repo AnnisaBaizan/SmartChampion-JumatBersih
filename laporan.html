@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laporan Kegiatan Jumat Bersih — SMART Champion</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --green: #145a32; --green2: #1e8449; --line: #d9e2dc; }
+    body { font-family: Arial, sans-serif; background: #eef2ef; color: #222; }
+
+    .app-header {
+      background: var(--green); color: #fff; padding: 12px 24px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.3); position: sticky; top: 0; z-index: 50;
+    }
+    .app-header h1 { font-size: 15px; font-weight: 700; }
+    .app-header small { font-size: 11px; opacity: .8; }
+    .app-header a { margin-left: auto; color: #fff; text-decoration: none; font-size: 12px;
+      border: 1px solid rgba(255,255,255,.3); border-radius: 4px; padding: 5px 12px; }
+    .app-header a:hover { background: rgba(255,255,255,.12); }
+
+    .wrap { max-width: 820px; margin: 24px auto; padding: 0 16px 80px; }
+
+    .banner {
+      background: linear-gradient(135deg, var(--green), var(--green2));
+      color: #fff; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 18px;
+    }
+    .banner h2 { font-size: 20px; margin-bottom: 4px; }
+    .banner p { font-size: 12px; opacity: .9; }
+    .hint {
+      background: #fff8e1; border: 1px solid #f0e0a8; color: #6b5e1f;
+      font-size: 12px; border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; line-height: 1.6;
+    }
+
+    .section { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.05);
+      margin-bottom: 18px; overflow: hidden; }
+    .section > h3 {
+      background: #eaf3ee; color: var(--green); font-size: 14px; padding: 12px 18px;
+      border-bottom: 1px solid var(--line); letter-spacing: .3px;
+    }
+    .section .body { padding: 18px; }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+    label.lbl { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 5px; color: #333; }
+    label.lbl .req { color: #c0392b; }
+    .field input[type=text], .field input[type=date], .field input[type=number],
+    .field input[type=tel], .field select, .field textarea {
+      width: 100%; padding: 9px 11px; border: 1px solid #cfd8d2; border-radius: 7px;
+      font-size: 13px; font-family: inherit; background: #fbfdfc;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: var(--green2); background: #fff; }
+    .field textarea { resize: vertical; min-height: 70px; }
+    .field .help { font-size: 11px; color: #999; margin-top: 3px; }
+
+    .row { display: flex; gap: 14px; flex-wrap: wrap; }
+    .row > .field { flex: 1; min-width: 200px; }
+
+    .chk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; }
+    @media (max-width: 560px){ .chk-grid { grid-template-columns: 1fr; } }
+    .chk { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; cursor: pointer; }
+    .chk input { margin-top: 2px; }
+
+    .radio-group { display: flex; flex-direction: column; gap: 6px; }
+    .radio-group label { font-size: 13px; display: flex; gap: 8px; align-items: center; cursor: pointer; }
+
+    .upload-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    @media (max-width: 640px){ .upload-grid { grid-template-columns: 1fr; } }
+    .uploader { border: 2px dashed #bcd0c3; border-radius: 10px; text-align: center;
+      padding: 14px; cursor: pointer; background: #fafdfb; transition: border-color .15s; }
+    .uploader:hover { border-color: var(--green2); }
+    .uploader .ic { font-size: 30px; }
+    .uploader .t { font-size: 12px; font-weight: 700; color: var(--green); margin-top: 4px; }
+    .uploader .s { font-size: 11px; color: #999; }
+    .uploader img { max-width: 100%; border-radius: 6px; margin-top: 8px; max-height: 150px; }
+    .uploader input { display: none; }
+
+    .statement { font-size: 12.5px; line-height: 1.7; color: #444; background: #f7faf8;
+      border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+
+    .ttd-grid { display: flex; gap: 18px; flex-wrap: wrap; }
+    .ttd-grid > .field { flex: 1; min-width: 220px; }
+
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+    .btn { border: none; border-radius: 8px; padding: 13px 26px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; }
+    .btn-primary { background: var(--green2); color: #fff; }
+    .btn-primary:hover { background: var(--green); }
+    .btn-primary:disabled { background: #9bbfa9; cursor: not-allowed; }
+    .btn-ghost { background: #eef2ef; color: #333; }
+
+    /* Toast / status */
+    #status { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      background: #222; color: #fff; padding: 12px 22px; border-radius: 8px; font-size: 13px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.3); display: none; z-index: 200; max-width: 90%; }
+    #status.ok { background: #1e8449; }
+    #status.err { background: #c0392b; }
+
+    /* Overlay sukses */
+    #done { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none;
+      align-items: center; justify-content: center; z-index: 300; padding: 20px; }
+    #done .box { background: #fff; border-radius: 14px; max-width: 460px; width: 100%;
+      padding: 30px 26px; text-align: center; }
+    #done .box .ic { font-size: 52px; }
+    #done .box h3 { color: var(--green); margin: 8px 0; font-size: 20px; }
+    #done .box p { font-size: 13px; color: #555; line-height: 1.6; margin-bottom: 18px; }
+    #done .box .actions { flex-direction: column; }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>🧹 Laporan Kegiatan Jumat Bersih</h1>
+      <small>SMART Champion — Poltekkes Kemenkes Palembang</small>
+    </div>
+    <a href="index.html">← Beranda</a>
+  </header>
+
+  <div class="wrap">
+    <div class="banner">
+      <h2>LAPORAN KEGIATAN JUMAT BERSIH</h2>
+      <p>Template Resmi SMART Champion — Champion Bergerak, Budaya Kerja Menguat</p>
+    </div>
+
+    <div class="hint">
+      <b>Petunjuk Pengisian:</b> Laporan ini diisi setiap hari Jumat oleh penanggung jawab masing-masing
+      Jurusan/Program Studi. Setelah dikirim, laporan otomatis terdokumentasi pada Dashboard SMART Champion.
+      Prodi yang belum mengumpulkan sebelum pukul <b>15.00 WIB</b> akan mendapatkan notifikasi otomatis.
+    </div>
+
+    <form id="form">
+      <!-- A. IDENTITAS -->
+      <div class="section">
+        <h3>A. IDENTITAS PELAPORAN</h3>
+        <div class="body">
+          <div class="row">
+            <div class="field">
+              <label class="lbl">Tanggal Kegiatan <span class="req">*</span></label>
+              <input type="date" name="tanggal" id="tanggal" required>
+            </div>
+            <div class="field">
+              <label class="lbl">Hari</label>
+              <input type="text" name="hari" id="hari" value="Jumat" readonly>
+            </div>
+          </div>
+          <div class="field">
+            <label class="lbl">Jurusan / Program Studi <span class="req">*</span></label>
+            <select name="prodi" id="prodi" required>
+              <option value="">— Pilih Prodi —</option>
+              <option>Keperawatan</option>
+              <option>Kebidanan</option>
+              <option>Keperawatan Gigi</option>
+              <option>Gizi</option>
+              <option>Sanitasi Lingkungan</option>
+              <option>Analis Kesehatan / TLM</option>
+              <option>Farmasi</option>
+              <option>Rekam Medis</option>
+              <option>Fisioterapi</option>
+              <option>Teknik Elektromedik</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="lbl">Nama Penanggung Jawab <span class="req">*</span></label>
+            <input type="text" name="namaPj" placeholder="Nama lengkap dengan gelar" required>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label class="lbl">Jabatan / NIP <span class="req">*</span></label>
+              <input type="text" name="jabatanNip" placeholder="Contoh: Kaprodi / 198501012010012001" required>
+            </div>
+            <div class="field">
+              <label class="lbl">No. HP / WA <span class="req">*</span></label>
+              <input type="tel" name="hp" placeholder="Contoh: 08123456789" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B. KEHADIRAN -->
+      <div class="section">
+        <h3>B. DATA KEHADIRAN PESERTA</h3>
+        <div class="body">
+          <div class="row">
+            <div class="field">
+              <label class="lbl">Jumlah Dosen Hadir</label>
+              <input type="number" name="dosen" min="0" value="0">
+              <div class="help">orang</div>
+            </div>
+            <div class="field">
+              <label class="lbl">Jumlah Tendik Hadir</label>
+              <input type="number" name="tendik" min="0" value="0">
+              <div class="help">orang</div>
+            </div>
+            <div class="field">
+              <label class="lbl">Mahasiswa Terlibat</label>
+              <input type="number" name="mahasiswa" min="0" value="0">
+              <div class="help">orang</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C. AKTIVITAS -->
+      <div class="section">
+        <h3>C. AKTIVITAS YANG DILAKSANAKAN (centang semua yang sesuai)</h3>
+        <div class="body">
+          <div class="chk-grid" id="aktivitasGrid"></div>
+          <div class="field" style="margin-top:14px;">
+            <label class="lbl">Aktivitas lainnya (opsional)</label>
+            <input type="text" name="aktivitasLain" placeholder="Tuliskan jika ada aktivitas di luar daftar di atas">
+          </div>
+        </div>
+      </div>
+
+      <!-- D. EVALUASI -->
+      <div class="section">
+        <h3>D. EVALUASI PELAKSANAAN</h3>
+        <div class="body">
+          <div class="row">
+            <div class="field">
+              <label class="lbl">Kondisi Kebersihan SEBELUM <span class="req">*</span></label>
+              <div class="radio-group">
+                <label><input type="radio" name="sebelum" value="Sangat Kotor" required> Sangat Kotor</label>
+                <label><input type="radio" name="sebelum" value="Kotor"> Kotor</label>
+                <label><input type="radio" name="sebelum" value="Cukup Bersih"> Cukup Bersih</label>
+                <label><input type="radio" name="sebelum" value="Bersih"> Bersih</label>
+              </div>
+            </div>
+            <div class="field">
+              <label class="lbl">Kondisi Kebersihan SESUDAH <span class="req">*</span></label>
+              <div class="radio-group">
+                <label><input type="radio" name="sesudah" value="Cukup Bersih" required> Cukup Bersih</label>
+                <label><input type="radio" name="sesudah" value="Bersih"> Bersih</label>
+                <label><input type="radio" name="sesudah" value="Sangat Bersih"> Sangat Bersih</label>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="lbl">Kendala yang dihadapi (opsional)</label>
+            <textarea name="kendala" placeholder="Tuliskan kendala selama kegiatan..."></textarea>
+          </div>
+          <div class="field">
+            <label class="lbl">Catatan / saran perbaikan untuk program berikutnya (opsional)</label>
+            <textarea name="catatan" placeholder="Tuliskan saran perbaikan..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- E. DOKUMENTASI FOTO -->
+      <div class="section">
+        <h3>E. DOKUMENTASI FOTO (wajib: minimal foto sebelum + sesudah)</h3>
+        <div class="body">
+          <div class="upload-grid">
+            <label class="uploader" for="fotoSebelum">
+              <div class="ic">📷</div>
+              <div class="t">Foto SEBELUM <span class="req" style="color:#c0392b">*</span></div>
+              <div class="s">Unggah Foto Sebelum</div>
+              <img id="prevSebelum" hidden>
+              <input type="file" id="fotoSebelum" accept="image/*">
+            </label>
+            <label class="uploader" for="fotoSesudah">
+              <div class="ic">📷</div>
+              <div class="t">Foto SESUDAH <span class="req" style="color:#c0392b">*</span></div>
+              <div class="s">Unggah Foto Sesudah</div>
+              <img id="prevSesudah" hidden>
+              <input type="file" id="fotoSesudah" accept="image/*">
+            </label>
+            <label class="uploader" for="fotoTambahan">
+              <div class="ic">📷</div>
+              <div class="t">Foto Tambahan</div>
+              <div class="s">Opsional</div>
+              <img id="prevTambahan" hidden>
+              <input type="file" id="fotoTambahan" accept="image/*">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- F. PERNYATAAN & TTD -->
+      <div class="section">
+        <h3>F. PERNYATAAN &amp; TANDA TANGAN</h3>
+        <div class="body">
+          <div class="statement">
+            Saya yang bertanda tangan di bawah ini menyatakan bahwa laporan Kegiatan Jumat Bersih ini
+            benar dan dapat dipertanggungjawabkan sebagai dokumentasi program budaya kerja
+            Poltekkes Kemenkes Palembang.
+          </div>
+          <div class="ttd-grid">
+            <div class="field">
+              <label class="lbl">Mengetahui, Ketua Jurusan</label>
+              <input type="text" name="namaKajur" placeholder="Nama Ketua Jurusan" style="margin-bottom:8px;">
+              <input type="text" name="nipKajur" placeholder="NIP Ketua Jurusan">
+            </div>
+            <div class="field">
+              <label class="lbl">Ka. Prodi / Pelapor</label>
+              <input type="text" name="namaKaprodi" placeholder="Nama Ka. Prodi" style="margin-bottom:8px;">
+              <input type="text" name="nipKaprodi" placeholder="NIP Ka. Prodi">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" id="btnSubmit">📤 Kirim Laporan</button>
+        <button type="button" class="btn btn-ghost" onclick="window.print()">🖨️ Pratinjau / Cetak PDF</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="done">
+    <div class="box">
+      <div class="ic">✅</div>
+      <h3>Laporan Terkirim!</h3>
+      <p id="doneMsg">Laporan Jumat Bersih Anda sudah tersimpan dan otomatis muncul di Dashboard SMART Champion.</p>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Unduh PDF Laporan</button>
+        <a class="btn btn-ghost" href="dashboard.html" style="text-decoration:none;display:inline-block;">📊 Lihat Dashboard</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GAS_URL = '__GAS_URL__';
+
+    const AKTIVITAS = [
+      'Pembersihan ruang kelas',
+      'Pembersihan ruang laboratorium',
+      'Pembersihan ruang pimpinan',
+      'Pembersihan ruang administrasi',
+      'Pembersihan ruang dosen',
+      'Pembersihan ruang arsip',
+      'Pembersihan ruang gudang',
+      'Pembersihan koridor dan area bersama',
+      'Pembersihan kamar mandi dan wastafel',
+      'Pengelolaan sampah terpilah (organik & anorganik)',
+      'Penataan meja & kursi (Clean Desk Culture / 5R)',
+      'Penataan dokumen & arsip',
+      'Perawatan tanaman / penghijauan lingkungan',
+      'Gotong royong halaman / area parkir',
+    ];
+    const grid = document.getElementById('aktivitasGrid');
+    AKTIVITAS.forEach((a, i) => {
+      const l = document.createElement('label');
+      l.className = 'chk';
+      l.innerHTML = `<input type="checkbox" name="aktivitas" value="${a.replace(/"/g,'&quot;')}"> <span>${a}</span>`;
+      grid.appendChild(l);
+    });
+
+    // Default tanggal = Jumat terdekat (hari ini jika Jumat)
+    (function setDefaultDate(){
+      const t = new Date();
+      const day = t.getDay();           // 5 = Jumat
+      const diff = (5 - day + 7) % 7;   // maju ke Jumat
+      t.setDate(t.getDate() + diff);
+      document.getElementById('tanggal').value = t.toISOString().slice(0,10);
+    })();
+
+    // ── Foto: kompres ke base64 (max 1000px, JPEG 0.7) ──
+    const fotos = { sebelum: '', sesudah: '', tambahan: '' };
+    function bindUpload(inputId, prevId, key) {
+      const input = document.getElementById(inputId);
+      const prev  = document.getElementById(prevId);
+      input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = new Image();
+          img.onload = () => {
+            const max = 1000;
+            let { width: w, height: h } = img;
+            if (w > max || h > max) {
+              if (w > h) { h = h * max / w; w = max; } else { w = w * max / h; h = max; }
+            }
+            const c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            c.getContext('2d').drawImage(img, 0, 0, w, h);
+            const data = c.toDataURL('image/jpeg', 0.7);
+            fotos[key] = data;
+            prev.src = data; prev.hidden = false;
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    bindUpload('fotoSebelum', 'prevSebelum', 'sebelum');
+    bindUpload('fotoSesudah', 'prevSesudah', 'sesudah');
+    bindUpload('fotoTambahan','prevTambahan','tambahan');
+
+    function toast(msg, type) {
+      const s = document.getElementById('status');
+      s.textContent = msg; s.className = type || '';
+      s.style.display = 'block';
+      if (type !== 'loading') setTimeout(() => s.style.display = 'none', 4000);
+    }
+
+    document.getElementById('form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const f = ev.target;
+
+      if (!fotos.sebelum || !fotos.sesudah) {
+        toast('Foto SEBELUM dan SESUDAH wajib diunggah.', 'err');
+        return;
+      }
+
+      const aktivitas = [...f.querySelectorAll('input[name=aktivitas]:checked')].map(c => c.value);
+
+      const payload = {
+        action: 'submitLaporan',
+        tanggal: f.tanggal.value,
+        hari: f.hari.value,
+        prodi: f.prodi.value,
+        namaPj: f.namaPj.value.trim(),
+        jabatanNip: f.jabatanNip.value.trim(),
+        hp: f.hp.value.trim(),
+        dosen: Number(f.dosen.value) || 0,
+        tendik: Number(f.tendik.value) || 0,
+        mahasiswa: Number(f.mahasiswa.value) || 0,
+        aktivitas: aktivitas,
+        aktivitasLain: f.aktivitasLain.value.trim(),
+        sebelum: f.sebelum.value,
+        sesudah: f.sesudah.value,
+        kendala: f.kendala.value.trim(),
+        catatan: f.catatan.value.trim(),
+        namaKajur: f.namaKajur.value.trim(),
+        nipKajur: f.nipKajur.value.trim(),
+        namaKaprodi: f.namaKaprodi.value.trim(),
+        nipKaprodi: f.nipKaprodi.value.trim(),
+        fotoSebelum: fotos.sebelum,
+        fotoSesudah: fotos.sesudah,
+        fotoTambahan: fotos.tambahan,
+      };
+
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = true;
+      toast('Mengirim laporan...', 'loading');
+
+      try {
+        if (GAS_URL.startsWith('__')) {
+          throw new Error('GAS_URL belum dikonfigurasi (jalankan build.js dengan env GAS_URL).');
+        }
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          // text/plain menghindari CORS preflight ke Apps Script
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+        });
+        const out = await res.json();
+        if (out.status === 'success') {
+          document.getElementById('status').style.display = 'none';
+          const dm = document.getElementById('doneMsg');
+          if (out.nomor) dm.textContent = 'Nomor laporan: ' + out.nomor + '. Tersimpan & muncul di Dashboard SMART Champion.';
+          document.getElementById('done').style.display = 'flex';
+        } else {
+          throw new Error(out.error || 'Gagal menyimpan laporan.');
+        }
+      } catch (err) {
+        toast('Gagal: ' + err.message, 'err');
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
