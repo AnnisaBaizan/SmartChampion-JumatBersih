@@ -131,6 +131,8 @@ function doGet(e) {
   let result;
   if (action === 'getDashboard') {
     result = getDashboard(e.parameter.tanggal || '');
+  } else if (action === 'getTren') {
+    result = getTren(e.parameter.mode || 'mingguan');
   } else if (action === 'getProdi') {
     const m = _getMengetahui();
     result = { prodiList: m.map(x => x.unit),
@@ -519,9 +521,12 @@ function getDashboard(tanggal) {
         if (tanggal && rTgl !== tanggal) return;
         const prodi = r[4];
         // ambil laporan terbaru per prodi (dedupe: peserta tidak dihitung ganda)
-        seen[prodi] = { prodi: prodi, status: 'SUDAH', waktu: r[25], ket: '', peserta: Number(r[11]) || 0 };
-        // kumpulkan foto dokumentasi untuk slideshow
-        // foto bisa banyak (URL dipisah koma); kolom Video (r[24]) tidak dimasukkan slideshow
+        seen[prodi] = {
+          prodi: prodi, status: 'SUDAH', waktu: r[25], ket: '',
+          dosen: Number(r[8]) || 0, tendik: Number(r[9]) || 0, mahasiswa: Number(r[10]) || 0,
+          peserta: Number(r[11]) || 0,
+        };
+        // kumpulkan foto dokumentasi untuk slideshow (URL dipisah koma; kolom Video r[24] dikecualikan)
         [['Sebelum', r[22]], ['Sesudah', r[23]]].forEach(pair => {
           String(pair[1] || '').split(',').forEach(u => {
             const img = _driveImg(u.trim());
@@ -530,10 +535,58 @@ function getDashboard(tanggal) {
         });
       });
     }
-    // total peserta dari hasil dedup (1 prodi dihitung sekali)
-    Object.keys(seen).forEach(p => { rows.push(seen[p]); totalPeserta += seen[p].peserta || 0; });
+    // agregasi dari hasil dedup (1 prodi dihitung sekali)
+    let dosen = 0, tendik = 0, mahasiswa = 0;
+    Object.keys(seen).forEach(p => {
+      rows.push(seen[p]);
+      totalPeserta += seen[p].peserta || 0;
+      dosen += seen[p].dosen; tendik += seen[p].tendik; mahasiswa += seen[p].mahasiswa;
+    });
     const prodiList = _getProdiMaster().map(p => p.prodi);
-    return { rows: rows, totalPeserta: totalPeserta, tanggal: tanggal, prodiList: prodiList, fotos: fotos };
+    const totalUnit = prodiList.length || 1;
+    const sudah = rows.length;
+    fotos.sort((a, b) => a.prodi === b.prodi ? (a.label < b.label ? -1 : 1) : (a.prodi < b.prodi ? -1 : 1));
+    return {
+      rows: rows, tanggal: tanggal, prodiList: prodiList, fotos: fotos,
+      totalPeserta: totalPeserta,
+      peserta: { dosen: dosen, tendik: tendik, mahasiswa: mahasiswa, total: totalPeserta },
+      sudah: sudah, belum: Math.max(0, totalUnit - sudah), totalUnit: totalUnit,
+      kepatuhan: Math.round(sudah / totalUnit * 100),
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
+// ── Tren agregat untuk grafik (mode: 'mingguan' per Jumat | 'bulanan' per bulan) ──
+function getTren(mode) {
+  try {
+    const sheet = _sheet();
+    const lastRow = sheet.getLastRow();
+    const totalUnit = (_getMengetahui().length) || 1;
+    const buckets = {};
+    if (lastRow > 1) {
+      const data = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+      data.forEach(r => {
+        const tgl = _normTgl(r[2]); if (!tgl) return;
+        const key = (mode === 'bulanan') ? tgl.slice(0, 7) : tgl;  // YYYY-MM atau YYYY-MM-DD
+        const b = buckets[key] || (buckets[key] = { prodi: {} });
+        // dedupe per prodi per periode (peserta diambil sekali)
+        b.prodi[r[4]] = { dosen: Number(r[8]) || 0, tendik: Number(r[9]) || 0, mhs: Number(r[10]) || 0 };
+      });
+    }
+    const keys = Object.keys(buckets).sort();
+    const labels = [], kepatuhan = [], dosen = [], tendik = [], mahasiswa = [], pelapor = [];
+    keys.forEach(k => {
+      const prodis = Object.keys(buckets[k].prodi);
+      let d = 0, t = 0, m = 0;
+      prodis.forEach(p => { const x = buckets[k].prodi[p]; d += x.dosen; t += x.tendik; m += x.mhs; });
+      labels.push(k);
+      pelapor.push(prodis.length);
+      kepatuhan.push(Math.min(100, Math.round(prodis.length / totalUnit * 100)));
+      dosen.push(d); tendik.push(t); mahasiswa.push(m);
+    });
+    return { mode: mode, labels: labels, kepatuhan: kepatuhan, dosen: dosen, tendik: tendik, mahasiswa: mahasiswa, pelapor: pelapor, totalUnit: totalUnit };
   } catch (err) {
     return { error: err.message };
   }

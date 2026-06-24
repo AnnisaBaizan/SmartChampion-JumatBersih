@@ -23,7 +23,8 @@ hanya memakai Node bawaan.
 - **Pratinjau langsung** PDF di sebelah form (desktop) / di bawah (HP) — terisi otomatis saat mengetik.
 - **Output PDF** ber-**KOP resmi**, bisa diunduh setelah kirim dan **diunduh ulang** kapan saja.
 - **Konfigurasi via Sheet** (tab `Pengaturan`) + **penomoran anti-duplikat** (LockService) untuk submit bersamaan.
-- **Dashboard SMART Champion:** statistik kepatuhan, rekap status per prodi, **slideshow dokumentasi foto**, jadwal & contoh notifikasi, dan alur sistem.
+- **Dashboard SMART Champion:** statistik (Sudah/Belum, Kepatuhan, Total Peserta + pecahan **Dosen/Tendik/Mahasiswa**), **grafik tren Mingguan/Bulanan** (kepatuhan & peserta per golongan — SVG tanpa library), rekap per unit, **slideshow dokumentasi** (per unit, Sebelum→Sesudah), jadwal & contoh notifikasi.
+- **Dropdown master:** *Mengetahui* terisi **otomatis & terkunci** saat unit dipilih (TTD muncul bila pernah dibuat, bisa di-overwrite); *Penanggung Jawab* dropdown **terfilter per unit** dan **tumbuh otomatis**.
 - **Master prodi & kontak** di-load dari Spreadsheet (tab `Prodi-Master`) — satu sumber data.
 - **Notifikasi otomatis** (cron): pengingat Jumat 12.00 / 14.30 / 15.01 + rekap Senin 07.00.
 

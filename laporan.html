@@ -226,7 +226,8 @@
     .rv-ttd .ttdimg { height: 84px; display: flex; align-items: flex-end; justify-content: center; }
     .rv-ttd .ttdimg img { max-height: 84px; max-width: 92%; }
     .rv-ttd .nm { display: inline-block; font-weight: bold; text-decoration: none;
-      border-bottom: 2.2px solid #000; padding: 0 8px 1px; margin-top: 2px; }
+      border-bottom: 2.2px solid #000; padding: 0 10px 1px; margin-top: 2px; }
+    .rv-ttd .nipline { display: block; margin-top: 3px; }
     .rv-foot { text-align: center; font-size: 8.5pt; color: #777; margin-top: 16px;
       border-top: 1px solid #ddd; padding-top: 5px; }
 
@@ -285,7 +286,7 @@
             </div>
             <div class="field">
               <label class="lbl">Hari</label>
-              <input type="text" name="hari" id="hari" value="Jumat" readonly>
+              <input type="text" name="hari" id="hari" value="Jumat" readonly tabindex="-1" style="background:#eef2ef;cursor:not-allowed;" title="Terkunci: Jumat">
             </div>
           </div>
           <div class="field">
@@ -421,9 +422,9 @@
           </div>
           <div class="ttd-grid">
             <div class="field">
-              <label class="lbl">Mengetahui, Ketua Jurusan <small style="color:#999;font-weight:400;">(pilih dari daftar)</small></label>
-              <input type="text" name="namaKajur" id="namaKajur" list="dlKajur" placeholder="Pilih Ketua Jurusan" style="margin-bottom:8px;">
-              <input type="text" name="nipKajur" id="nipKajur" placeholder="NIP Ketua Jurusan">
+              <label class="lbl">Mengetahui <small style="color:#999;font-weight:400;">(otomatis dari unit — terkunci)</small></label>
+              <input type="text" name="namaKajur" id="namaKajur" placeholder="Otomatis saat unit dipilih" readonly tabindex="-1" style="margin-bottom:8px;background:#eef2ef;cursor:not-allowed;">
+              <input type="text" name="nipKajur" id="nipKajur" placeholder="NIP" readonly tabindex="-1" style="background:#eef2ef;cursor:not-allowed;">
               <div class="sigwrap">
                 <div class="sig-preview" id="prevKajur"><span class="sig-empty">Belum ada tanda tangan</span></div>
                 <div class="sigbar">
@@ -433,9 +434,9 @@
               </div>
             </div>
             <div class="field">
-              <label class="lbl">Ka. Prodi / Pelapor <small style="color:#999;font-weight:400;">(penanggung jawab)</small></label>
-              <input type="text" name="namaKaprodi" id="namaKaprodi" list="dlPJ" placeholder="Pilih / ketik penanggung jawab" style="margin-bottom:8px;">
-              <input type="text" name="nipKaprodi" id="nipKaprodi" placeholder="NIP Ka. Prodi / Pelapor">
+              <label class="lbl">Penanggung Jawab / Pelapor <small style="color:#999;font-weight:400;">(pilih atau ketik baru)</small></label>
+              <input type="text" name="namaKaprodi" id="namaKaprodi" list="dlPJ" placeholder="Pilih PJ unit ini / ketik nama baru" style="margin-bottom:8px;">
+              <input type="text" name="nipKaprodi" id="nipKaprodi" placeholder="NIP">
               <div class="sigwrap">
                 <div class="sig-preview" id="prevKaprodi"><span class="sig-empty">Belum ada tanda tangan</span></div>
                 <div class="sigbar">
@@ -572,37 +573,56 @@
 
     // ── Master "Mengetahui" (per unit) & "Penanggung Jawab" → dropdown nama + auto-isi NIP/TTD ──
     let MENGETAHUI = [], PJ_LIST = [];
+    // Data demo agar dropdown tetap kelihatan saat backend belum aktif
+    const DEMO_MENGETAHUI = PRODI_FALLBACK.map((u, i) => ({
+      unit: u, nama: 'Ketua ' + u.replace(/^Jurusan |^PS-Diploma Tiga /, ''),
+      nip: '19800101200001' + String(1000 + i).slice(-4), ttd: ''
+    }));
+    const DEMO_PJ = [].concat(...PRODI_FALLBACK.map((u, i) => ([
+      { unit: u, nama: 'Andi Pratama ' + (i + 1), nip: '19900202201501' + String(2000 + i).slice(-4), ttd: '' },
+      { unit: u, nama: 'Siti Rahayu ' + (i + 1), nip: '19910303201602' + String(3000 + i).slice(-4), ttd: '' },
+    ])));
+
     function refreshUnitDependent() {
       const unit = document.getElementById('prodi').value;
       // Mengetahui: nama Ketua Jurusan untuk unit terpilih
+      const kajurs = MENGETAHUI.filter(m => m.unit === unit && m.nama);
       const dlK = document.getElementById('dlKajur'); dlK.innerHTML = '';
-      MENGETAHUI.filter(m => m.unit === unit && m.nama).forEach(m => {
-        const o = document.createElement('option'); o.value = m.nama; dlK.appendChild(o);
-      });
+      kajurs.forEach(m => { const o = document.createElement('option'); o.value = m.nama; dlK.appendChild(o); });
       // Penanggung Jawab: nama untuk unit terpilih
       const dlP = document.getElementById('dlPJ'); dlP.innerHTML = '';
       PJ_LIST.filter(p => (!unit || p.unit === unit) && p.nama).forEach(p => {
         const o = document.createElement('option'); o.value = p.nama; dlP.appendChild(o);
       });
+      // AUTO-ISI "Mengetahui" begitu unit dipilih (umumnya 1 Ketua Jurusan per unit)
+      const kEl = document.getElementById('namaKajur');
+      if (unit && kajurs.length) {
+        document.getElementById('nipKajur').value = '';
+        if (sig.kajur) sig.kajur.data = '';
+        kEl.value = kajurs[0].nama;
+        kEl.dispatchEvent(new Event('change'));
+      } else if (unit) {
+        kEl.value = '';
+      }
     }
     (async function loadMengetahui() {
-      if (GAS_URL.startsWith('__')) return;
+      if (GAS_URL.startsWith('__')) { MENGETAHUI = DEMO_MENGETAHUI; refreshUnitDependent(); return; }
       try {
         const res = await fetch(`${GAS_URL}?action=getProdi`);
         const out = await res.json();
         if (out.prodiList && out.prodiList.length) isiProdi(out.prodiList);
-        MENGETAHUI = out.mengetahui || [];
+        MENGETAHUI = (out.mengetahui && out.mengetahui.length) ? out.mengetahui : DEMO_MENGETAHUI;
         refreshUnitDependent();
-      } catch (e) { /* abaikan */ }
+      } catch (e) { MENGETAHUI = DEMO_MENGETAHUI; refreshUnitDependent(); }
     })();
     (async function loadPJ() {
-      if (GAS_URL.startsWith('__')) return;
+      if (GAS_URL.startsWith('__')) { PJ_LIST = DEMO_PJ; refreshUnitDependent(); return; }
       try {
         const res = await fetch(`${GAS_URL}?action=getPJ`);
         const out = await res.json();
-        PJ_LIST = out.pjList || [];
+        PJ_LIST = (out.pjList && out.pjList.length) ? out.pjList : DEMO_PJ;
         refreshUnitDependent();
-      } catch (e) { /* abaikan */ }
+      } catch (e) { PJ_LIST = DEMO_PJ; refreshUnitDependent(); }
     })();
 
     // Pilih nama Ketua Jurusan → isi NIP + muat TTD tersimpan
@@ -867,10 +887,12 @@
          <div class="rv-statement">Saya yang bertanda tangan di bawah ini menyatakan bahwa laporan Kegiatan Jumat Bersih
            ini benar dan dapat dipertanggungjawabkan sebagai dokumentasi program budaya kerja Poltekkes Kemenkes Palembang.</div>
          <div class="rv-ttd">
-           <div class="col">Mengetahui,<br>Ketua Jurusan${ttdImg(d.ttdKajur)}
-             <div class="nm">${esc(d.namaKajur) || dash}</div>NIP. ${esc(d.nipKajur) || dash}</div>
-           <div class="col">Palembang, ${esc(tglStr)}<br>Ka. Prodi / Pelapor${ttdImg(d.ttdKaprodi)}
-             <div class="nm">${esc(d.namaKaprodi) || esc(d.namaPj) || dash}</div>NIP. ${esc(d.nipKaprodi) || dash}</div>
+           <div class="col">Mengetahui,${ttdImg(d.ttdKajur)}
+             <div class="nm">${esc(d.namaKajur) || dash}</div>
+             <div class="nipline">NIP. ${esc(d.nipKajur) || dash}</div></div>
+           <div class="col">Palembang, ${esc(tglStr)}<br>Penanggung Jawab / Pelapor${ttdImg(d.ttdKaprodi)}
+             <div class="nm">${esc(d.namaKaprodi) || esc(d.namaPj) || dash}</div>
+             <div class="nipline">NIP. ${esc(d.nipKaprodi) || dash}</div></div>
          </div>`,
 
         `<div class="rv-foot">Dokumen dihasilkan otomatis oleh Sistem SMART Champion — ${new Date().toLocaleString('id-ID')}</div>`,
