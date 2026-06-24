@@ -118,10 +118,11 @@ const HEADERS = [
   'Timestamp', 'Nomor', 'Tanggal', 'Hari', 'Prodi', 'Nama PJ', 'Jabatan/NIP', 'No. HP/WA',
   'Dosen', 'Tendik', 'Mahasiswa', 'Total Peserta', 'Aktivitas', 'Aktivitas Lain',
   'Kondisi Sebelum', 'Kondisi Sesudah', 'Kendala', 'Catatan',
-  'Nama Kajur', 'NIP Kajur', 'Nama Kaprodi', 'NIP Kaprodi',
+  'Mengetahui', 'NIP Mengetahui', 'Penanggung Jawab', 'NIP PJ',
   'Foto Sebelum', 'Foto Sesudah', 'Video', 'Waktu Kirim',
-  'TTD Ketua Jurusan', 'TTD Ka Prodi',
 ];
+// Catatan: TTD TIDAK disimpan di baris laporan — melekat di sheet "Mengetahui" & "Penanggung Jawab"
+// (gambar TTD hanya tersimpan sekali di Drive, link-nya di master), supaya tidak berulang.
 
 // ================================================
 
@@ -356,13 +357,13 @@ function handleSubmitLaporan(d) {
         updated = true;
         nomor = sheet.getRange(existingRow, 2).getValue();
         const tsLama = sheet.getRange(existingRow, 1).getValue() || now;
-        sheet.getRange(existingRow, 1, 1, HEADERS.length).setValues([_rowLaporan(d, tsLama, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo, ttdKajurUrl, ttdKaprodiUrl)]);
+        sheet.getRange(existingRow, 1, 1, HEADERS.length).setValues([_rowLaporan(d, tsLama, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo)]);
       } else {
         // Baris BARU — nomor urut tahun berjalan
         const nomorList = lastRow > 1 ? sheet.getRange(2, 2, lastRow - 1, 1).getValues().flat() : [];
         const urut = nomorList.filter(n => n && String(n).includes('/' + tahun)).length + 1;
         nomor = _settings().NOMOR_PREFIX + '/' + String(urut).padStart(3, '0') + '/' + tahun;
-        sheet.appendRow(_rowLaporan(d, now, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo, ttdKajurUrl, ttdKaprodiUrl));
+        sheet.appendRow(_rowLaporan(d, now, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo));
       }
       SpreadsheetApp.flush();  // pastikan tertulis sebelum lock dilepas
     } finally {
@@ -388,7 +389,7 @@ function handleSubmitLaporan(d) {
 }
 
 // Bentuk satu baris arsip (urut sesuai HEADERS) — dipakai untuk insert & update
-function _rowLaporan(d, ts, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo, ttdKajurUrl, ttdKaprodiUrl) {
+function _rowLaporan(d, ts, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo) {
   return [
     ts, nomor, d.tanggal, d.hari, d.prodi, d.namaPj, d.jabatanNip, d.hp,
     Number(d.dosen) || 0, Number(d.tendik) || 0, Number(d.mahasiswa) || 0, totalPeserta,
@@ -396,7 +397,6 @@ function _rowLaporan(d, ts, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesu
     d.sebelum, d.sesudah, d.kendala || '', d.catatan || '',
     d.namaKajur || '', d.nipKajur || '', d.namaKaprodi || '', d.nipKaprodi || '',
     urlSebelum, urlSesudah, urlVideo, waktuKirim,
-    ttdKajurUrl, ttdKaprodiUrl,
   ];
 }
 
