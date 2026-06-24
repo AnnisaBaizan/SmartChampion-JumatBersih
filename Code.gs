@@ -5,23 +5,73 @@
 // ============================================================
 
 // ==================== CONFIG ====================
+// Hanya ID teknis & rahasia yang disimpan di sini.
+// Variabel yang sifatnya DINAMIS (nama instansi, email admin, BASE_URL, dll)
+// diatur lewat tab "Pengaturan" di Spreadsheet — lihat _settings().
 const CONFIG = {
   SPREADSHEET_ID: 'GANTI_DENGAN_SPREADSHEET_ID',   // ID Google Sheets arsip laporan
   SHEET_NAME: 'Laporan-JumatBersih',               // Tab arsip laporan
   PRODI_SHEET_NAME: 'Prodi-Master',                // Tab master prodi + kontak notifikasi
-  DRIVE_FOLDER_ID: 'GANTI_DENGAN_FOLDER_ID',        // Folder Drive untuk foto dokumentasi
+  PENGATURAN_SHEET_NAME: 'Pengaturan',             // Tab pengaturan dinamis (key-value)
+  DRIVE_FOLDER_ID: 'GANTI_DENGAN_FOLDER_ID',        // Folder Drive untuk foto/TTD
+  WA_TOKEN: 'GANTI_DENGAN_TOKEN_FONNTE',            // rahasia → tetap di sini, JANGAN di Sheet
+
+  // Default — dipakai bila tab "Pengaturan" belum ada / nilainya kosong:
   NAMA_INSTANSI: 'Politeknik Kesehatan Kemenkes Palembang',
-  NOMOR_PREFIX: 'JB/SMART-CHAMPION',                // Prefix nomor laporan
-  FORM_URL: 'https://smartchampion-jumatbersih.vercel.app/laporan.html',
-
-  // --- Email notifikasi (MailApp bawaan Google) ---
-  EMAIL_AKTIF: true,
-  EMAIL_ADMIN: 'smartchampion@poltekkespalembang.ac.id',  // rekap & arsip
-
-  // --- WhatsApp via Fonnte (https://fonnte.com) ---
-  WA_AKTIF: false,                                  // set true setelah token diisi
-  WA_TOKEN: 'GANTI_DENGAN_TOKEN_FONNTE',
+  EMAIL_ADMIN:   'smartchampion@poltekkespalembang.ac.id',
+  BASE_URL:      'https://smartchampion-jumatbersih.vercel.app',  // ubah saat pindah domain instansi
+  NOMOR_PREFIX:  'JB/SMART-CHAMPION',
+  BATAS_WAKTU:   '15.00 WIB',
+  EMAIL_AKTIF:   true,
+  WA_AKTIF:      false,
 };
+
+// ── Pengaturan dinamis dari tab "Pengaturan" (key | value) ──
+// Cache per-eksekusi; fallback ke CONFIG bila belum diisi.
+let _settingsCache = null;
+function _settings() {
+  if (_settingsCache) return _settingsCache;
+  const s = {
+    NAMA_INSTANSI: CONFIG.NAMA_INSTANSI, EMAIL_ADMIN: CONFIG.EMAIL_ADMIN,
+    BASE_URL: CONFIG.BASE_URL, NOMOR_PREFIX: CONFIG.NOMOR_PREFIX,
+    BATAS_WAKTU: CONFIG.BATAS_WAKTU, EMAIL_AKTIF: CONFIG.EMAIL_AKTIF, WA_AKTIF: CONFIG.WA_AKTIF,
+  };
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(CONFIG.PENGATURAN_SHEET_NAME);
+    if (!sheet) { sheet = ss.insertSheet(CONFIG.PENGATURAN_SHEET_NAME); _seedPengaturan(sheet, s); }
+    const lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      sheet.getRange(2, 1, lastRow - 1, 2).getValues().forEach(r => {
+        const k = String(r[0]).trim();
+        if (!(k in s)) return;
+        let v = r[1];
+        if (v === '' || v === null) return;  // kosong → pakai default
+        if (typeof s[k] === 'boolean') v = (String(v).toUpperCase() === 'TRUE' || v === true);
+        s[k] = v;
+      });
+    }
+  } catch (e) { /* pakai default */ }
+  _settingsCache = s;
+  return s;
+}
+function _seedPengaturan(sheet, s) {
+  sheet.appendRow(['Kunci', 'Nilai', 'Keterangan']);
+  sheet.getRange(1, 1, 1, 3).setFontWeight('bold');
+  const ket = {
+    NAMA_INSTANSI: 'Nama instansi di notifikasi & PDF',
+    EMAIL_ADMIN: 'Penerima rekap mingguan',
+    BASE_URL: 'Domain aplikasi (ubah saat pindah ke domain instansi)',
+    NOMOR_PREFIX: 'Prefix nomor laporan',
+    BATAS_WAKTU: 'Batas pengumpulan laporan',
+    EMAIL_AKTIF: 'Aktifkan notifikasi Email (TRUE/FALSE)',
+    WA_AKTIF: 'Aktifkan notifikasi WhatsApp (TRUE/FALSE)',
+  };
+  Object.keys(s).forEach(k => sheet.appendRow([k, s[k], ket[k] || '']));
+  sheet.setFrozenRows(1);
+}
+// URL form (dari BASE_URL) untuk tautan di notifikasi
+function _formUrl() { return String(_settings().BASE_URL || '').replace(/\/+$/, '') + '/laporan.html'; }
 
 // ── Daftar prodi default ──
 // Kontak (No. WA & email) DI-LOAD dari tab "Prodi-Master" di Spreadsheet (lihat _getProdiMaster).
@@ -125,47 +175,52 @@ function _getProdiMaster() {
 // ============================================================
 function handleSubmitLaporan(d) {
   try {
-    const sheet = _sheet();
     const now = new Date();
     const tz = Session.getScriptTimeZone() || 'Asia/Jakarta';
-
-    // Nomor urut tahun berjalan
-    const tahun = now.getFullYear();
-    const lastRow = sheet.getLastRow();
-    let urut = 1;
-    if (lastRow > 1) {
-      const nomorList = sheet.getRange(2, 2, lastRow - 1, 1).getValues().flat();
-      urut = nomorList.filter(n => n && String(n).includes('/' + tahun)).length + 1;
-    }
-    const nomor = CONFIG.NOMOR_PREFIX + '/' + String(urut).padStart(3, '0') + '/' + tahun;
     const waktuKirim = Utilities.formatDate(now, tz, 'HH.mm') + ' WIB';
-
     const totalPeserta = (Number(d.dosen) || 0) + (Number(d.tendik) || 0) + (Number(d.mahasiswa) || 0);
 
-    // Upload foto ke Drive
+    // ── Upload media DULU (lambat) — di luar lock agar lock dipegang sesingkat mungkin ──
     const folder = _getFolder(d.prodi, d.tanggal);
     const urlSebelum = _savePhotos(folder, d.fotoSebelum, `${d.prodi}_${d.tanggal}_SEBELUM`);
     const urlSesudah = _savePhotos(folder, d.fotoSesudah, `${d.prodi}_${d.tanggal}_SESUDAH`);
     // Video disimpan sebagai LINK (Drive/YouTube) — hemat penyimpanan, tidak di-upload ulang
     const urlVideo = (d.video && /^https?:\/\//.test(String(d.video))) ? String(d.video).trim() : '-';
-
-    // Simpan TTD ke Drive (folder TTD) agar bisa dipakai ulang lewat dropdown
     const ttdKajurUrl   = _saveTtd(d.prodi, d.namaKajur,   d.ttdKajur);
     const ttdKaprodiUrl = _saveTtd(d.prodi, d.namaKaprodi, d.ttdKaprodi);
 
-    sheet.appendRow([
-      now, nomor, d.tanggal, d.hari, d.prodi, d.namaPj, d.jabatanNip, d.hp,
-      Number(d.dosen) || 0, Number(d.tendik) || 0, Number(d.mahasiswa) || 0, totalPeserta,
-      (d.aktivitas || []).join(', '), d.aktivitasLain || '',
-      d.sebelum, d.sesudah, d.kendala || '', d.catatan || '',
-      d.namaKajur || '', d.nipKajur || '', d.namaKaprodi || '', d.nipKaprodi || '',
-      urlSebelum, urlSesudah, urlVideo, waktuKirim,
-      ttdKajurUrl, ttdKaprodiUrl,
-    ]);
+    // ── Bagian KRITIS: penomoran + tulis baris di-LOCK agar tidak duplikat saat submit bersamaan ──
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);  // antre maks 30 detik
+    let nomor;
+    try {
+      const sheet = _sheet();
+      const tahun = now.getFullYear();
+      const lastRow = sheet.getLastRow();
+      let urut = 1;
+      if (lastRow > 1) {
+        const nomorList = sheet.getRange(2, 2, lastRow - 1, 1).getValues().flat();
+        urut = nomorList.filter(n => n && String(n).includes('/' + tahun)).length + 1;
+      }
+      nomor = _settings().NOMOR_PREFIX + '/' + String(urut).padStart(3, '0') + '/' + tahun;
 
-    // Notifikasi konfirmasi
-    if (CONFIG.EMAIL_AKTIF) _emailKonfirmasi(d, nomor, totalPeserta);
-    if (CONFIG.WA_AKTIF)    _waKonfirmasi(d, nomor, totalPeserta);
+      sheet.appendRow([
+        now, nomor, d.tanggal, d.hari, d.prodi, d.namaPj, d.jabatanNip, d.hp,
+        Number(d.dosen) || 0, Number(d.tendik) || 0, Number(d.mahasiswa) || 0, totalPeserta,
+        (d.aktivitas || []).join(', '), d.aktivitasLain || '',
+        d.sebelum, d.sesudah, d.kendala || '', d.catatan || '',
+        d.namaKajur || '', d.nipKajur || '', d.namaKaprodi || '', d.nipKaprodi || '',
+        urlSebelum, urlSesudah, urlVideo, waktuKirim,
+        ttdKajurUrl, ttdKaprodiUrl,
+      ]);
+      SpreadsheetApp.flush();  // pastikan tertulis sebelum lock dilepas
+    } finally {
+      lock.releaseLock();
+    }
+
+    // Notifikasi konfirmasi (di luar lock)
+    if (_settings().EMAIL_AKTIF) _emailKonfirmasi(d, nomor, totalPeserta);
+    if (_settings().WA_AKTIF)    _waKonfirmasi(d, nomor, totalPeserta);
 
     return { status: 'success', nomor: nomor, waktu: waktuKirim };
   } catch (err) {
@@ -333,7 +388,7 @@ function _emailKonfirmasi(d, nomor, totalPeserta) {
       `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #e0e0e0;border-radius:10px;overflow:hidden">
         <div style="background:#145a32;color:#fff;padding:18px 20px">
           <h2 style="margin:0;font-size:18px">🧹 Laporan Jumat Bersih Diterima</h2>
-          <p style="margin:4px 0 0;font-size:12px;opacity:.85">${CONFIG.NAMA_INSTANSI}</p>
+          <p style="margin:4px 0 0;font-size:12px;opacity:.85">${_settings().NAMA_INSTANSI}</p>
         </div>
         <div style="padding:20px;font-size:13px;color:#333;line-height:1.7">
           <p><b>Nomor:</b> ${nomor}<br>
@@ -345,17 +400,17 @@ function _emailKonfirmasi(d, nomor, totalPeserta) {
           <p style="color:#1e8449"><b>Status:</b> Tersimpan & muncul di Dashboard SMART Champion.</p>
         </div>
         <div style="background:#f6f9f7;padding:12px 20px;font-size:11px;color:#999">
-          Email otomatis Sistem SMART Champion — ${CONFIG.NAMA_INSTANSI}.
+          Email otomatis Sistem SMART Champion — ${_settings().NAMA_INSTANSI}.
         </div>
       </div>`;
-    MailApp.sendEmail({ to: CONFIG.EMAIL_ADMIN, subject: subjek, htmlBody: html });
+    MailApp.sendEmail({ to: _settings().EMAIL_ADMIN, subject: subjek, htmlBody: html });
   } catch (e) { Logger.log('Email konfirmasi error: ' + e.message); }
 }
 
 function _waKonfirmasi(d, nomor, totalPeserta) {
   const pesan =
 `✅ *LAPORAN JUMAT BERSIH DITERIMA*
-${CONFIG.NAMA_INSTANSI}
+${_settings().NAMA_INSTANSI}
 ━━━━━━━━━━━━━━━━━━━━
 📄 *Nomor:* ${nomor}
 🏛️ *Prodi:* ${d.prodi}
@@ -370,7 +425,7 @@ _Tersimpan di Dashboard SMART Champion_`;
 
 // ── Kirim WhatsApp via Fonnte ──
 function _kirimWA(target, pesan) {
-  if (!CONFIG.WA_AKTIF) return;
+  if (!_settings().WA_AKTIF) return;
   try {
     const resp = UrlFetchApp.fetch('https://api.fonnte.com/send', {
       method: 'POST',
@@ -397,6 +452,7 @@ function _tanggalJumatIni() {
 }
 
 function _kirimPengingat(tanggal, tahap) {
+  const S = _settings();
   const belum = _prodiBelumLapor(tanggal);
   belum.forEach(p => {
     const isi =
@@ -404,19 +460,19 @@ function _kirimPengingat(tanggal, tahap) {
 Yth. Ketua Jurusan/Kaprodi *${p.prodi}*
 
 Laporan Jumat Bersih tanggal *${tanggal}* belum masuk ke sistem SMART Champion.
-Batas pengumpulan: *Jumat pukul 15.00 WIB*.
+Batas pengumpulan: *Jumat pukul ${S.BATAS_WAKTU}*.
 
-Akses form: ${CONFIG.FORM_URL}
+Akses form: ${_formUrl()}
 ━━━━━━━━━━━━━━━━━━━━
-_${CONFIG.NAMA_INSTANSI}_`;
-    if (CONFIG.WA_AKTIF && p.wa && p.wa.replace(/\D/g, '').length >= 8) _kirimWA(p.wa, isi);
-    if (CONFIG.EMAIL_AKTIF && p.email && p.email.indexOf('@') > -1) {
+_${S.NAMA_INSTANSI}_`;
+    if (S.WA_AKTIF && p.wa && p.wa.replace(/\D/g, '').length >= 8) _kirimWA(p.wa, isi);
+    if (S.EMAIL_AKTIF && p.email && p.email.indexOf('@') > -1) {
       try {
         MailApp.sendEmail({
           to: p.email,
           subject: `${tahap.judul} — ${p.prodi} (${tanggal})`,
           htmlBody: isi.replace(/\*/g, '').replace(/\n/g, '<br>')
-            + `<br><a href="${CONFIG.FORM_URL}">Buka Form Laporan</a>`,
+            + `<br><a href="${_formUrl()}">Buka Form Laporan</a>`,
         });
       } catch (e) { Logger.log('Email pengingat error: ' + e.message); }
     }
@@ -447,8 +503,8 @@ function rekapMingguan() {
       <b>Kepatuhan:</b> ${patuh}%</p>
       <p><b>Prodi belum lapor:</b><br>${list}</p>
     </div>`;
-  if (CONFIG.EMAIL_AKTIF) {
-    try { MailApp.sendEmail({ to: CONFIG.EMAIL_ADMIN, subject: `Rekap Mingguan Jumat Bersih — ${tanggal}`, htmlBody: html }); }
+  if (_settings().EMAIL_AKTIF) {
+    try { MailApp.sendEmail({ to: _settings().EMAIL_ADMIN, subject: `Rekap Mingguan Jumat Bersih — ${tanggal}`, htmlBody: html }); }
     catch (e) { Logger.log('Rekap error: ' + e.message); }
   }
 }

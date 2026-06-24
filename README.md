@@ -20,7 +20,9 @@ hanya memakai Node bawaan.
 - **Form Bagian A–F** sesuai template resmi (identitas, kehadiran, aktivitas, evaluasi, dokumentasi, TTD).
 - **Dokumentasi:** Foto **Sebelum 3–5**, Foto **Sesudah 3–5** (dikompres otomatis di sisi klien), dan **video via link** (Google Drive / YouTube — hemat penyimpanan).
 - **Tanda tangan digital** (gambar di kanvas). TTD **disimpan ke Google Drive** dan bisa **dipakai ulang** lewat dropdown per prodi. Ada peringatan + checkbox konfirmasi agar TTD tidak asal/sembarangan.
+- **Pratinjau langsung** PDF di sebelah form (desktop) / di bawah (HP) — terisi otomatis saat mengetik.
 - **Output PDF** ber-**KOP resmi**, bisa diunduh setelah kirim dan **diunduh ulang** kapan saja.
+- **Konfigurasi via Sheet** (tab `Pengaturan`) + **penomoran anti-duplikat** (LockService) untuk submit bersamaan.
 - **Dashboard SMART Champion:** statistik kepatuhan, rekap status per prodi, **slideshow dokumentasi foto**, jadwal & contoh notifikasi, dan alur sistem.
 - **Master prodi & kontak** di-load dari Spreadsheet (tab `Prodi-Master`) — satu sumber data.
 - **Notifikasi otomatis** (cron): pengingat Jumat 12.00 / 14.30 / 15.01 + rekap Senin 07.00.
@@ -38,7 +40,7 @@ hanya memakai Node bawaan.
 | `vercel.json` | Konfigurasi build Vercel (`node build.js` → `dist`) |
 | `.env.example` | Contoh variabel lingkungan |
 | `KOP.png` | Kop surat resmi (dipakai di kepala PDF laporan) |
-| `Template_Spreadsheet_JumatBersih.xlsx` | Template database (tab `Laporan-JumatBersih` + `Prodi-Master`), berisi **data dummy** untuk uji coba |
+| `Template_Spreadsheet_JumatBersih.xlsx` | Template database — tab `Laporan-JumatBersih` + `Prodi-Master` + `Pengaturan` (berisi **data dummy** untuk uji coba) |
 
 ---
 
@@ -57,13 +59,14 @@ hanya memakai Node bawaan.
    (`https://docs.google.com/spreadsheets/d/`**`<ID>`**`/edit`).
    - Tab **`Laporan-JumatBersih`** = database laporan (28 kolom). Template sudah berisi **7 baris dummy** (tanggal `2026-06-19`).
    - Tab **`Prodi-Master`** = daftar prodi + No. WA (format `62…`) + email Kaprodi/Kajur. **Lengkapi kontak asli di sini.**
-   - *Catatan:* jika Spreadsheet dibiarkan kosong, `Code.gs` membuat tab + header otomatis saat laporan pertama masuk.
-2. **Folder Drive:** buat satu folder untuk dokumentasi (foto/video/TTD). Salin **ID** folder dari URL.
+   - Tab **`Pengaturan`** = **semua variabel dinamis** (key-value) — ubah di sini, **tanpa edit kode**:
+     `NAMA_INSTANSI`, `EMAIL_ADMIN`, `BASE_URL` (domain aplikasi), `NOMOR_PREFIX`, `BATAS_WAKTU`, `EMAIL_AKTIF`, `WA_AKTIF`.
+   - *Catatan:* jika Spreadsheet dibiarkan kosong, `Code.gs` membuat semua tab + header (termasuk `Pengaturan`) otomatis.
+2. **Folder Drive:** buat satu folder untuk dokumentasi (foto/TTD). Salin **ID** folder dari URL.
 3. Buka [script.google.com](https://script.google.com) → **New Project** → hapus isi default → tempel seluruh `Code.gs`.
-4. Lengkapi blok **`CONFIG`** di atas:
-   - `SPREADSHEET_ID`, `DRIVE_FOLDER_ID`
-   - `EMAIL_ADMIN` (penerima rekap mingguan)
-   - WhatsApp (opsional): `WA_TOKEN` + ubah `WA_AKTIF: true`
+4. Lengkapi blok **`CONFIG`** di atas — **hanya ID teknis & rahasia**:
+   - `SPREADSHEET_ID`, `DRIVE_FOLDER_ID`, dan `WA_TOKEN` (opsional, untuk WhatsApp).
+   - Sisanya (nama instansi, email admin, domain, dll) diatur di tab **`Pengaturan`**, bukan di kode.
 5. **Deploy → New deployment → Web app**
    - *Execute as:* **Me** · *Who has access:* **Anyone**
    - Salin **Web app URL** → ini nilai `GAS_URL`.
@@ -101,6 +104,9 @@ hanya memakai Node bawaan.
 
 ## Catatan teknis
 - **Tanpa npm:** `build.js` & `Code.gs` tidak punya dependency. `vercel.json` memakai `installCommand: ""`.
+- **Konfigurasi dinamis di Sheet:** semua variabel yang sering berubah (nama instansi, email admin, `BASE_URL`, prefix nomor, batas waktu, on/off notifikasi) ada di tab **`Pengaturan`** — diubah tanpa menyentuh kode. Hanya ID teknis & token rahasia yang ada di `CONFIG`.
+- **URL relatif:** semua tautan antar-halaman di frontend relatif (`laporan.html`, `index.html`). Tautan absolut hanya di notifikasi Email/WA, dibangun dari `BASE_URL` di tab `Pengaturan` — **pindah domain cukup ubah satu baris di Sheet**.
+- **Penomoran anti-duplikat:** penghitungan nomor + penulisan baris dikunci dengan **`LockService`** (antre maks 30 dtk) + `SpreadsheetApp.flush()`, sehingga submit bersamaan tidak menghasilkan nomor kembar. Upload media dilakukan di luar lock agar lock dipegang sesingkat mungkin.
 - **Foto** dikompres otomatis di browser ke maks **1280px / JPEG 0.8** (±300 KB) — tajam di layar & PDF, user tidak perlu kompres manual.
 - **Video tidak di-upload** (browser tidak bisa kompres video tanpa library berat) — disimpan sebagai **link** Drive/YouTube agar kuota Drive institusi (100 GB) awet. Estimasi storage tanpa video ≈ 1 GB/tahun (puluhan tahun).
 - POST ke GAS memakai `Content-Type: text/plain` untuk menghindari CORS preflight.
@@ -120,7 +126,7 @@ hanya memakai Node bawaan.
    - **Foto Sesudah:** sama, **3–5 foto**.
    - **Video (Link):** opsional — unggah video ke Google Drive/YouTube lalu **tempel tautannya**.
 7. **F. Pernyataan & Tanda Tangan:**
-   - **Gambar tanda tangan** di kotak (pakai mouse/sentuh) untuk Ketua Jurusan & Ka. Prodi.
+   - Klik **✍️ Buat / Ubah Tanda Tangan** → muncul **kanvas besar (modal)** yang nyaman di HP; tanda tangani lalu **Simpan**.
    - Jika sudah pernah membuat TTD, pilih dari **dropdown** "🖊️ …" — TTD tersimpan otomatis muncul per prodi.
    - ⚠️ **Penting:** TTD **disimpan permanen** ke sistem & dipakai ulang. Pastikan **rapi & benar** — kalau jelek klik **Hapus** lalu ulangi. Centang konfirmasi sebelum kirim.
 8. Klik **📤 Kirim Laporan**. Setelah sukses, klik **🖨️ Unduh PDF Laporan**.
