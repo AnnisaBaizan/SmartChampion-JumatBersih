@@ -74,7 +74,7 @@ hanya memakai Node bawaan.
 6. **(Opsional) Tes notifikasi:** jalankan fungsi **`tesNotifikasi`** dari editor untuk mengirim
    email/WA uji coba (cek *Logs*, inbox, & WhatsApp). `tesPengingatSekarang` menguji alur pengingat prodi.
 7. **(Opsional) Aktifkan notifikasi otomatis:** jalankan fungsi **`pasangTrigger`** sekali dari editor
-   (menu *Run*). Ini memasang trigger: Jumat 12.00 / 14.30 / 15.01 + rekap Senin 07.00.
+   (menu *Run*). Memasang trigger: Jumat 12.00/14.30/15.01, Selasa 09.00, Kamis 13.00, Jumat 07.00 (tutup minggu lalu + rekap).
 
 > **Subfolder otomatis di Drive:** foto/video disimpan per Jumat di folder `JumatBersih_<tanggal>`,
 > dan tanda tangan di subfolder `TTD/` (nama file `<Prodi>___<Nama>.png`) agar bisa dipakai ulang.
@@ -94,6 +94,27 @@ hanya memakai Node bawaan.
 
 > **Mode demo:** tanpa `GAS_URL`, dashboard tampil **data contoh** + slideshow contoh, dan form
 > tetap bisa mengisi & **mengunduh PDF** (tidak tersimpan ke server). Berguna untuk pratinjau.
+
+## 3. Rebuild & Redeploy (setelah ada perubahan)
+
+### Mengubah backend (`Code.gs`)
+1. Tempel ulang isi `Code.gs` ke project Apps Script (timpa yang lama).
+2. **Deploy → Manage deployments → Edit (ikon pensil) → Version: New version → Deploy.**
+   *(Wajib "New version" — kalau tidak, perubahan tidak aktif. URL `GAS_URL` tetap sama.)*
+3. Jika menambah/ubah trigger waktu, jalankan **`pasangTrigger`** sekali lagi.
+4. Uji cepat: jalankan **`tesNotifikasi`** dari editor.
+
+### Mengubah frontend (HTML / `build.js`)
+- **Via Git + Vercel (otomatis):** `git add -A && git commit -m "..." && git push`.
+  Vercel auto-build & deploy (jika repo sudah terhubung ke Vercel).
+- **Via CLI (manual):**
+  ```bash
+  vercel deploy --prod          # env GAS_URL & ADMIN_PASSWORD diambil dari project Vercel
+  ```
+- **Uji lokal sebelum deploy:** `GAS_URL="..." ADMIN_PASSWORD="..." node build.js` lalu buka `dist/`.
+
+### Mengubah pengaturan/kontak/prodi
+- Edit langsung di Spreadsheet (tab `Pengaturan`, `Prodi-Master`) — **tidak perlu rebuild/redeploy** apa pun.
 
 ## Kontrak API (GAS)
 
@@ -146,14 +167,15 @@ hanya memakai Node bawaan.
 5. Tabel **Jadwal Notifikasi** & **Alur Sistem** menjelaskan kapan pengingat dikirim.
 
 ## C. Notifikasi Otomatis
-Prodi yang belum melapor akan menerima Email + WhatsApp:
+**Window pelaporan = 1 minggu:** Jumat (hari pelaksanaan) s/d Kamis berikutnya.
+Prodi yang belum melapor menerima Email + WhatsApp:
 
 | Waktu | Hari | Aksi |
 |-------|------|------|
-| 12.00 WIB | Jumat | Pengingat awal |
-| 14.30 WIB | Jumat | Pengingat mendesak |
-| 15.01 WIB | Jumat | Notifikasi keterlambatan + log |
-| 07.00 WIB | Senin | Rekap mingguan ke Admin/Pimpinan |
+| 12.00 / 14.30 / 15.01 WIB | Jumat | Pengingat hari pelaksanaan (3×) |
+| 09.00 WIB | Selasa | Pengingat tengah window |
+| 13.00 WIB | Kamis | Pengingat terakhir (hari terakhir window) |
+| 07.00 WIB | Jumat (berikutnya) | Tutup window minggu lalu: tandai **terlambat** + rekap ke Admin |
 
 ---
 
