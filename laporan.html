@@ -20,7 +20,7 @@
       border: 1px solid rgba(255,255,255,.3); border-radius: 4px; padding: 5px 12px; }
     .app-header a:hover { background: rgba(255,255,255,.12); }
 
-    .wrap { max-width: 1320px; margin: 24px auto; padding: 0 16px 80px; }
+    .wrap { width: 90%; max-width: 1500px; margin: 24px auto; padding: 0 16px 80px; }  /* ~10/12 lebar layar */
 
     /* Layout 2 kolom: form + pratinjau (desktop), tumpuk di HP */
     .layout { display: flex; gap: 20px; align-items: flex-start; }
@@ -234,7 +234,7 @@
     @media print {
       body { background: #fff; }
       .app-header, .banner, .hint, #form, #status, #done, .redl, .preview-head, .col-form { display: none !important; }
-      .wrap { margin: 0; padding: 0; max-width: none; }
+      .wrap { margin: 0; padding: 0; max-width: none; width: auto; }
       .layout, .col-preview { display: block !important; flex: none !important; width: auto !important;
         position: static !important; max-height: none !important; overflow: visible !important;
         background: #fff !important; border: none !important; box-shadow: none !important; }
