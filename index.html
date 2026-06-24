@@ -111,6 +111,20 @@
       <a href="laporan.html" class="btn-isi">📝 Isi Laporan</a>
     </div>
 
+    <div class="card">
+      <h3>📸 Dokumentasi Foto Jumat Bersih</h3>
+      <div class="body" style="padding:18px;">
+        <div id="slideshow" class="slideshow" hidden>
+          <div class="slide-frame" id="slideFrame"></div>
+          <div class="sl-cap" id="slideCap"></div>
+          <button class="sl-nav prev" onclick="slideMove(-1)">‹</button>
+          <button class="sl-nav next" onclick="slideMove(1)">›</button>
+          <div class="sl-dots" id="slideDots"></div>
+        </div>
+        <div id="noFoto" hidden>Belum ada dokumentasi foto untuk tanggal ini.</div>
+      </div>
+    </div>
+
     <div class="stats">
       <div class="stat"><div class="n" id="stSudah">–</div><div class="l">Prodi Sudah Lapor</div></div>
       <div class="stat warn"><div class="n" id="stBelum">–</div><div class="l">Prodi Belum Lapor</div></div>
@@ -128,20 +142,6 @@
           </thead>
           <tbody id="tblBody"></tbody>
         </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>📸 Dokumentasi Foto Jumat Bersih</h3>
-      <div class="body" style="padding:18px;">
-        <div id="slideshow" class="slideshow" hidden>
-          <div class="slide-frame" id="slideFrame"></div>
-          <div class="sl-cap" id="slideCap"></div>
-          <button class="sl-nav prev" onclick="slideMove(-1)">‹</button>
-          <button class="sl-nav next" onclick="slideMove(1)">›</button>
-          <div class="sl-dots" id="slideDots"></div>
-        </div>
-        <div id="noFoto" hidden>Belum ada dokumentasi foto untuk tanggal ini.</div>
       </div>
     </div>
 
