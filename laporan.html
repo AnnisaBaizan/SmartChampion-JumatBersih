@@ -185,8 +185,8 @@
     .sig-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
     .sig-modal-head b { color: var(--green); font-size: 15px; }
     .sig-modal-head button { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
-    .sig-modal-pad { width: 100%; height: 46vh; min-height: 220px; border: 2px dashed #aac4b3;
-      border-radius: 10px; background: #fcfffd; touch-action: none; cursor: crosshair; display: block; }
+    .sig-modal-pad { width: 100%; height: 38vh; min-height: 200px; max-height: 320px; aspect-ratio: 5 / 2;
+      border: 2px dashed #aac4b3; border-radius: 10px; background: #fcfffd; touch-action: none; cursor: crosshair; display: block; margin: 0 auto; }
     .sig-modal-actions { display: flex; gap: 10px; margin-top: 10px; }
     .sig-modal-actions button { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #d6ddd8;
       background: #f0f2f0; font-size: 14px; font-weight: 700; cursor: pointer; }
@@ -223,9 +223,10 @@
     .rv-statement { text-align: justify; margin: 6px 0 10px; }
     .rv-ttd { display: flex; justify-content: space-between; margin-top: 8px; }
     .rv-ttd .col { width: 46%; text-align: center; }
-    .rv-ttd .ttdimg { height: 70px; display: flex; align-items: center; justify-content: center; }
-    .rv-ttd .ttdimg img { max-height: 70px; max-width: 90%; }
-    .rv-ttd .nm { font-weight: bold; text-decoration: underline; }
+    .rv-ttd .ttdimg { height: 84px; display: flex; align-items: flex-end; justify-content: center; }
+    .rv-ttd .ttdimg img { max-height: 84px; max-width: 92%; }
+    .rv-ttd .nm { display: inline-block; font-weight: bold; text-decoration: none;
+      border-bottom: 2.2px solid #000; padding: 0 8px 1px; margin-top: 2px; }
     .rv-foot { text-align: center; font-size: 8.5pt; color: #777; margin-top: 16px;
       border-top: 1px solid #ddd; padding-top: 5px; }
 
@@ -288,14 +289,14 @@
             </div>
           </div>
           <div class="field">
-            <label class="lbl">Program Studi (Prodi) <span class="req">*</span></label>
+            <label class="lbl">Jurusan / Program Studi <span class="req">*</span></label>
             <select name="prodi" id="prodi" required>
               <option value="">— Pilih Prodi —</option>
             </select>
           </div>
           <div class="field">
             <label class="lbl">Nama Penanggung Jawab <span class="req">*</span></label>
-            <input type="text" name="namaPj" placeholder="Nama lengkap dengan gelar" required>
+            <input type="text" name="namaPj" id="namaPj" list="dlPJ" placeholder="Pilih dari daftar atau ketik nama baru" required>
           </div>
           <div class="row">
             <div class="field">
@@ -420,13 +421,10 @@
           </div>
           <div class="ttd-grid">
             <div class="field">
-              <label class="lbl">Mengetahui, Ketua Jurusan</label>
-              <input type="text" name="namaKajur" id="namaKajur" placeholder="Nama Ketua Jurusan" style="margin-bottom:8px;">
-              <input type="text" name="nipKajur" placeholder="NIP Ketua Jurusan">
+              <label class="lbl">Mengetahui, Ketua Jurusan <small style="color:#999;font-weight:400;">(pilih dari daftar)</small></label>
+              <input type="text" name="namaKajur" id="namaKajur" list="dlKajur" placeholder="Pilih Ketua Jurusan" style="margin-bottom:8px;">
+              <input type="text" name="nipKajur" id="nipKajur" placeholder="NIP Ketua Jurusan">
               <div class="sigwrap">
-                <select id="savedKajur" style="margin-bottom:6px;" onchange="pakaiTtdTersimpan('kajur')">
-                  <option value="">🖊️ Tanda tangan baru</option>
-                </select>
                 <div class="sig-preview" id="prevKajur"><span class="sig-empty">Belum ada tanda tangan</span></div>
                 <div class="sigbar">
                   <button type="button" class="mk" onclick="openSigModal('kajur')">✍️ Buat / Ubah Tanda Tangan</button>
@@ -435,13 +433,10 @@
               </div>
             </div>
             <div class="field">
-              <label class="lbl">Ka. Prodi / Pelapor</label>
-              <input type="text" name="namaKaprodi" id="namaKaprodi" placeholder="Nama Ka. Prodi" style="margin-bottom:8px;">
-              <input type="text" name="nipKaprodi" placeholder="NIP Ka. Prodi">
+              <label class="lbl">Ka. Prodi / Pelapor <small style="color:#999;font-weight:400;">(penanggung jawab)</small></label>
+              <input type="text" name="namaKaprodi" id="namaKaprodi" list="dlPJ" placeholder="Pilih / ketik penanggung jawab" style="margin-bottom:8px;">
+              <input type="text" name="nipKaprodi" id="nipKaprodi" placeholder="NIP Ka. Prodi / Pelapor">
               <div class="sigwrap">
-                <select id="savedKaprodi" style="margin-bottom:6px;" onchange="pakaiTtdTersimpan('kaprodi')">
-                  <option value="">🖊️ Tanda tangan baru</option>
-                </select>
                 <div class="sig-preview" id="prevKaprodi"><span class="sig-empty">Belum ada tanda tangan</span></div>
                 <div class="sigbar">
                   <button type="button" class="mk" onclick="openSigModal('kaprodi')">✍️ Buat / Ubah Tanda Tangan</button>
@@ -450,11 +445,13 @@
               </div>
             </div>
           </div>
+          <datalist id="dlKajur"></datalist>
+          <datalist id="dlPJ"></datalist>
           <div class="ttd-warn">
             ⚠️
             <div>
               <b>Tanda tangan akan disimpan ke dalam sistem (Google Drive)</b> dan dapat dipakai ulang
-              untuk laporan berikutnya melalui dropdown per prodi. Pastikan tanda tangan
+              otomatis saat memilih nama yang sama berikutnya. Pastikan tanda tangan
               <b>rapi, jelas, dan benar milik Anda</b> — jangan asal/sembarangan, karena akan tercetak
               pada PDF laporan resmi dan tersimpan permanen. Jika kurang rapi, klik <b>Hapus</b> lalu ulangi.
               <label class="ttd-ack">
@@ -527,9 +524,20 @@
       'Perawatan tanaman / penghijauan lingkungan',
       'Gotong royong halaman / area parkir',
     ];
-    // Daftar prodi default (fallback bila backend belum dikonfigurasi / demo mode)
-    const PRODI_FALLBACK = ['Keperawatan','Kebidanan','Keperawatan Gigi','Gizi','Sanitasi Lingkungan',
-      'Analis Kesehatan / TLM','Farmasi','Rekam Medis','Fisioterapi','Teknik Elektromedik'];
+    // Daftar unit pelapor default (fallback bila backend belum dikonfigurasi / demo mode)
+    const PRODI_FALLBACK = [
+      'Jurusan Keperawatan',
+      'PS-Diploma Tiga Keperawatan Baturaja',
+      'PS-Diploma Tiga Keperawatan Lubuklinggau',
+      'PS-Diploma Tiga Keperawatan Lahat',
+      'Jurusan Gizi',
+      'Jurusan Kebidanan',
+      'PS-Diploma Tiga Kebidanan Muara Enim',
+      'Jurusan Farmasi',
+      'Jurusan Teknologi Laboratorium Medis',
+      'Jurusan Kesehatan Gigi',
+      'Jurusan Kesehatan Lingkungan',
+    ];
 
     function isiProdi(list) {
       const sel = document.getElementById('prodi');
@@ -538,22 +546,84 @@
     }
     isiProdi(PRODI_FALLBACK);
 
-    // Muat daftar prodi dari Spreadsheet (tab Prodi-Master) bila GAS dikonfigurasi
-    (async function loadProdi() {
-      if (GAS_URL.startsWith('__')) return;  // demo mode → pakai fallback
+    // (Daftar unit + Mengetahui dimuat di loadMengetahui di bawah)
+
+    const grid = document.getElementById('aktivitasGrid');
+    function isiAktivitas(list) {
+      grid.innerHTML = '';
+      list.forEach(a => {
+        const l = document.createElement('label');
+        l.className = 'chk';
+        l.innerHTML = `<input type="checkbox" name="aktivitas" value="${String(a).replace(/"/g, '&quot;')}"> <span>${String(a)}</span>`;
+        grid.appendChild(l);
+      });
+    }
+    isiAktivitas(AKTIVITAS);   // fallback default
+
+    // Muat daftar aktivitas dari Spreadsheet (tab Aktivitas) bila GAS dikonfigurasi
+    (async function loadAktivitas() {
+      if (GAS_URL.startsWith('__')) return;
+      try {
+        const res = await fetch(`${GAS_URL}?action=getAktivitas`);
+        const out = await res.json();
+        if (out.aktivitasList && out.aktivitasList.length) isiAktivitas(out.aktivitasList);
+      } catch (e) { /* tetap pakai fallback */ }
+    })();
+
+    // ── Master "Mengetahui" (per unit) & "Penanggung Jawab" → dropdown nama + auto-isi NIP/TTD ──
+    let MENGETAHUI = [], PJ_LIST = [];
+    function refreshUnitDependent() {
+      const unit = document.getElementById('prodi').value;
+      // Mengetahui: nama Ketua Jurusan untuk unit terpilih
+      const dlK = document.getElementById('dlKajur'); dlK.innerHTML = '';
+      MENGETAHUI.filter(m => m.unit === unit && m.nama).forEach(m => {
+        const o = document.createElement('option'); o.value = m.nama; dlK.appendChild(o);
+      });
+      // Penanggung Jawab: nama untuk unit terpilih
+      const dlP = document.getElementById('dlPJ'); dlP.innerHTML = '';
+      PJ_LIST.filter(p => (!unit || p.unit === unit) && p.nama).forEach(p => {
+        const o = document.createElement('option'); o.value = p.nama; dlP.appendChild(o);
+      });
+    }
+    (async function loadMengetahui() {
+      if (GAS_URL.startsWith('__')) return;
       try {
         const res = await fetch(`${GAS_URL}?action=getProdi`);
         const out = await res.json();
         if (out.prodiList && out.prodiList.length) isiProdi(out.prodiList);
-      } catch (e) { /* tetap pakai fallback */ }
+        MENGETAHUI = out.mengetahui || [];
+        refreshUnitDependent();
+      } catch (e) { /* abaikan */ }
+    })();
+    (async function loadPJ() {
+      if (GAS_URL.startsWith('__')) return;
+      try {
+        const res = await fetch(`${GAS_URL}?action=getPJ`);
+        const out = await res.json();
+        PJ_LIST = out.pjList || [];
+        refreshUnitDependent();
+      } catch (e) { /* abaikan */ }
     })();
 
-    const grid = document.getElementById('aktivitasGrid');
-    AKTIVITAS.forEach((a, i) => {
-      const l = document.createElement('label');
-      l.className = 'chk';
-      l.innerHTML = `<input type="checkbox" name="aktivitas" value="${a.replace(/"/g,'&quot;')}"> <span>${a}</span>`;
-      grid.appendChild(l);
+    // Pilih nama Ketua Jurusan → isi NIP + muat TTD tersimpan
+    document.getElementById('namaKajur').addEventListener('change', function () {
+      const unit = document.getElementById('prodi').value;
+      const m = MENGETAHUI.find(x => x.unit === unit && x.nama.toLowerCase() === this.value.trim().toLowerCase());
+      if (!m) return;
+      const nip = document.getElementById('nipKajur'); if (!nip.value.trim() && m.nip) nip.value = m.nip;
+      if (m.ttd) { sig.kajur.data = m.ttd; updateSigPreview('kajur'); }
+      refreshPreview();
+    });
+    // Pilih nama Penanggung Jawab → isi NIP + muat TTD + cerminkan ke Identitas (Nama PJ)
+    document.getElementById('namaKaprodi').addEventListener('change', function () {
+      const unit = document.getElementById('prodi').value;
+      const p = PJ_LIST.find(x => (!x.unit || x.unit === unit) && x.nama.toLowerCase() === this.value.trim().toLowerCase());
+      const namaPjEl = document.getElementById('namaPj'); if (!namaPjEl.value.trim()) namaPjEl.value = this.value;
+      if (p) {
+        const nip = document.getElementById('nipKaprodi'); if (!nip.value.trim() && p.nip) nip.value = p.nip;
+        if (p.ttd) { sig.kaprodi.data = p.ttd; updateSigPreview('kaprodi'); }
+      }
+      refreshPreview();
     });
 
     // Default tanggal = Jumat terdekat (hari ini jika Jumat)
@@ -652,8 +722,6 @@
     }
     function clearSig(role) {
       sig[role].data = '';
-      const sel = document.getElementById(role === 'kajur' ? 'savedKajur' : 'savedKaprodi');
-      if (sel) sel.value = '';
       updateSigPreview(role); refreshPreview();
     }
 
@@ -665,7 +733,7 @@
     function fitModalPad(loadData) {
       const r = mCanvas.getBoundingClientRect();
       mCanvas.width = r.width; mCanvas.height = r.height;
-      mCtx.lineWidth = 2.6; mCtx.lineCap = 'round'; mCtx.lineJoin = 'round'; mCtx.strokeStyle = '#0b3d91';
+      mCtx.lineWidth = 4; mCtx.lineCap = 'round'; mCtx.lineJoin = 'round'; mCtx.strokeStyle = '#0b3d91';
       if (loadData) {
         const img = new Image();
         img.onload = () => {
@@ -704,37 +772,23 @@
 
     updateSigPreview('kajur'); updateSigPreview('kaprodi');
 
-    // ── TTD tersimpan per prodi (dari Google Drive via GAS) ──
-    let TTD_SAVED = [];
-    function isiDropdownTtd(list) {
-      ['savedKajur', 'savedKaprodi'].forEach(id => {
-        const sel = document.getElementById(id); sel.length = 1;
-        list.forEach((t, i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = '🖊️ ' + t.nama; sel.appendChild(o); });
-      });
-    }
-    function pakaiTtdTersimpan(role) {
-      const sel = document.getElementById(role === 'kajur' ? 'savedKajur' : 'savedKaprodi');
-      if (sel.value === '') { clearSig(role); return; }
-      const t = TTD_SAVED[Number(sel.value)];
-      if (!t) return;
-      sig[role].data = t.img;
-      updateSigPreview(role);
-      const namaEl = document.getElementById(role === 'kajur' ? 'namaKajur' : 'namaKaprodi');
-      if (namaEl && !namaEl.value) namaEl.value = t.nama;
+    // Saat unit/prodi berganti → segarkan dropdown nama (Mengetahui & PJ) sesuai unit
+    document.getElementById('prodi').addEventListener('change', function () {
+      if (typeof refreshUnitDependent === 'function') refreshUnitDependent();
       refreshPreview();
-    }
-    async function muatTtdTersimpan() {
-      if (GAS_URL.startsWith('__')) return;
-      const prodi = document.getElementById('prodi').value;
-      if (!prodi) return;
-      try {
-        const res = await fetch(`${GAS_URL}?action=getTtd&prodi=${encodeURIComponent(prodi)}`);
-        const out = await res.json();
-        TTD_SAVED = out.ttdList || [];
-        isiDropdownTtd(TTD_SAVED);
-      } catch (e) { /* abaikan */ }
-    }
-    document.getElementById('prodi').addEventListener('change', muatTtdTersimpan);
+    });
+    // Pilih Nama PJ di Identitas → cerminkan ke Ka. Prodi + isi Jabatan/NIP + TTD
+    document.getElementById('namaPj').addEventListener('change', function () {
+      const unit = document.getElementById('prodi').value;
+      const kap = document.getElementById('namaKaprodi'); if (!kap.value.trim()) kap.value = this.value;
+      const p = PJ_LIST.find(x => (!x.unit || x.unit === unit) && x.nama.toLowerCase() === this.value.trim().toLowerCase());
+      if (p) {
+        const jab = document.querySelector('[name="jabatanNip"]'); if (jab && !jab.value.trim() && p.nip) jab.value = p.nip;
+        const nipK = document.getElementById('nipKaprodi'); if (nipK && !nipK.value.trim() && p.nip) nipK.value = p.nip;
+        if (p.ttd) { sig.kaprodi.data = p.ttd; updateSigPreview('kaprodi'); }
+      }
+      refreshPreview();
+    });
 
     // ════════ KUMPULKAN DATA + BANGUN LAPORAN PDF ════════
     function gatherData(f) {
@@ -759,9 +813,10 @@
       const dash = '<span style="color:#999">..................</span>';
       const akt = (d.aktivitas && d.aktivitas.length) ? d.aktivitas.map(a => `<li>${esc(a)}</li>`).join('') : '<li><i>belum dipilih</i></li>';
       const fotoList = (arr, label) => (arr && arr.length)
-        ? arr.map((s, i) => `<div class="rv-foto"><img src="${s}"><div class="cap">${label} ${i + 1}</div></div>`).join('') : '';
-      const fotosHtml = (fotoList(d.fotoSebelum, 'Sebelum') + fotoList(d.fotoSesudah, 'Sesudah'))
-        || '<div style="grid-column:1/-1;color:#999;font-size:9pt">(belum ada foto)</div>';
+        ? arr.map((s, i) => `<div class="rv-foto"><img src="${s}"><div class="cap">${label} ${i + 1}</div></div>`).join('')
+        : '<div style="grid-column:1/-1;color:#999;font-size:9pt">(belum ada foto)</div>';
+      const fotoSebelumHtml = fotoList(d.fotoSebelum, 'Sebelum');
+      const fotoSesudahHtml = fotoList(d.fotoSesudah, 'Sesudah');
       const videoNote = d.video ? `<div class="rv-video">🎬 Video: <a href="${esc(d.video)}">${esc(d.video)}</a></div>` : '';
       const tglStr = d.tanggal ? new Date(d.tanggal + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
       const ttdImg = s => s ? `<div class="ttdimg"><img src="${s}"></div>` : '<div class="ttdimg"></div>';
@@ -776,7 +831,7 @@
         `<div class="rv-h">A. Identitas Pelaporan</div>
          <table class="rv-id">
            ${idRow('Hari / Tanggal', esc(d.hari) + ', ' + esc(tglStr))}
-           ${idRow('Program Studi', esc(d.prodi))}
+           ${idRow('Jurusan / Prodi', esc(d.prodi))}
            ${idRow('Penanggung Jawab', esc(d.namaPj))}
            ${idRow('Jabatan / NIP', esc(d.jabatanNip))}
            ${idRow('No. HP / WA', esc(d.hp))}
@@ -802,10 +857,13 @@
            <tr><td class="k">Catatan / Saran</td><td>: ${esc(d.catatan || '-')}</td></tr>
          </table>`,
 
-        `<div class="rv-h">E. Dokumentasi</div>
-         <div class="rv-fotos">${fotosHtml}</div>${videoNote}`,
+        `<div class="rv-h">E. Dokumentasi Foto Sebelum</div>
+         <div class="rv-fotos">${fotoSebelumHtml}</div>`,
 
-        `<div class="rv-h">F. Pernyataan &amp; Tanda Tangan</div>
+        `<div class="rv-h">F. Dokumentasi Foto Sesudah</div>
+         <div class="rv-fotos">${fotoSesudahHtml}</div>${videoNote}`,
+
+        `<div class="rv-h">G. Pernyataan &amp; Tanda Tangan</div>
          <div class="rv-statement">Saya yang bertanda tangan di bawah ini menyatakan bahwa laporan Kegiatan Jumat Bersih
            ini benar dan dapat dipertanggungjawabkan sebagai dokumentasi program budaya kerja Poltekkes Kemenkes Palembang.</div>
          <div class="rv-ttd">

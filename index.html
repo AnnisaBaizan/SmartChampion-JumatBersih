@@ -133,12 +133,12 @@
     </div>
 
     <div class="card">
-      <h3>Rekap Status per Program Studi</h3>
+      <h3>Rekap Status per Jurusan / Program Studi</h3>
       <div class="body">
         <div id="loading">Memuat data dashboard…</div>
         <table id="tbl" hidden>
           <thead>
-            <tr><th>Program Studi</th><th>Status Laporan</th><th>Waktu Kirim</th><th>Ket.</th></tr>
+            <tr><th>Jurusan / Program Studi</th><th>Status Laporan</th><th>Waktu Kirim</th><th>Ket.</th></tr>
           </thead>
           <tbody id="tblBody"></tbody>
         </table>
@@ -191,8 +191,19 @@
 
   <script>
     const GAS_URL = '__GAS_URL__';
-    const PRODI = ['Keperawatan','Kebidanan','Keperawatan Gigi','Gizi','Sanitasi Lingkungan',
-      'Analis Kesehatan / TLM','Farmasi','Rekam Medis','Fisioterapi','Teknik Elektromedik'];
+    const PRODI = [
+      'Jurusan Keperawatan',
+      'PS-Diploma Tiga Keperawatan Baturaja',
+      'PS-Diploma Tiga Keperawatan Lubuklinggau',
+      'PS-Diploma Tiga Keperawatan Lahat',
+      'Jurusan Gizi',
+      'Jurusan Kebidanan',
+      'PS-Diploma Tiga Kebidanan Muara Enim',
+      'Jurusan Farmasi',
+      'Jurusan Teknologi Laboratorium Medis',
+      'Jurusan Kesehatan Gigi',
+      'Jurusan Kesehatan Lingkungan',
+    ];
 
     // Default tanggal = Jumat minggu pelaporan berjalan (lokal, anti-geser UTC)
     (function(){
@@ -229,16 +240,17 @@
     function demoData() {
       // Data contoh sesuai template (dipakai bila GAS belum dikonfigurasi)
       const map = {
-        'Keperawatan': {status:'SUDAH', waktu:'09.42 WIB'},
-        'Kebidanan': {status:'SUDAH', waktu:'10.15 WIB'},
-        'Keperawatan Gigi': {status:'BELUM', notif:true},
-        'Gizi': {status:'SUDAH', waktu:'11.05 WIB'},
-        'Sanitasi Lingkungan': {status:'SUDAH', waktu:'09.50 WIB'},
-        'Analis Kesehatan / TLM': {status:'SUDAH', waktu:'11.20 WIB'},
-        'Farmasi': {status:'SUDAH', waktu:'10.33 WIB'},
-        'Rekam Medis': {status:'BELUM', notif:true},
-        'Fisioterapi': {status:'BELUM', notif:true},
-        'Teknik Elektromedik': {status:'SUDAH', waktu:'08.55 WIB'},
+        'Jurusan Keperawatan': {status:'SUDAH', waktu:'09.42 WIB'},
+        'PS-Diploma Tiga Keperawatan Baturaja': {status:'SUDAH', waktu:'10.15 WIB'},
+        'PS-Diploma Tiga Keperawatan Lubuklinggau': {status:'BELUM', notif:true},
+        'PS-Diploma Tiga Keperawatan Lahat': {status:'SUDAH', waktu:'11.05 WIB'},
+        'Jurusan Gizi': {status:'SUDAH', waktu:'09.50 WIB'},
+        'Jurusan Kebidanan': {status:'SUDAH', waktu:'11.20 WIB'},
+        'PS-Diploma Tiga Kebidanan Muara Enim': {status:'BELUM', notif:true},
+        'Jurusan Farmasi': {status:'SUDAH', waktu:'10.33 WIB'},
+        'Jurusan Teknologi Laboratorium Medis': {status:'SUDAH', waktu:'08.55 WIB'},
+        'Jurusan Kesehatan Gigi': {status:'BELUM', notif:true},
+        'Jurusan Kesehatan Lingkungan': {status:'SUDAH', waktu:'10.05 WIB'},
       };
       return PRODI.map(p => ({ prodi: p, ...(map[p] || {status:'BELUM'}) }));
     }

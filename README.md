@@ -40,7 +40,7 @@ hanya memakai Node bawaan.
 | `vercel.json` | Konfigurasi build Vercel (`node build.js` → `dist`) |
 | `.env.example` | Contoh variabel lingkungan |
 | `KOP.png` | Kop surat resmi (dipakai di kepala PDF laporan) |
-| `Template_Spreadsheet_JumatBersih.xlsx` | Template database — tab `Laporan-JumatBersih` + `Prodi-Master` + `Pengaturan` (berisi **data dummy** untuk uji coba) |
+| `Template_Spreadsheet_JumatBersih.xlsx` | Template database — tab `Laporan-JumatBersih`, `Mengetahui`, `Penanggung Jawab`, `Aktivitas`, `Pengaturan` (berisi **data dummy**) |
 
 ---
 
@@ -57,11 +57,13 @@ hanya memakai Node bawaan.
 1. **Spreadsheet arsip:** impor `Template_Spreadsheet_JumatBersih.xlsx` ke Google Sheets
    (*File → Import → Upload → Replace/Create new*). Salin **ID** dari URL
    (`https://docs.google.com/spreadsheets/d/`**`<ID>`**`/edit`).
-   - Tab **`Laporan-JumatBersih`** = database laporan (28 kolom). Template sudah berisi **7 baris dummy** (tanggal `2026-06-19`).
-   - Tab **`Prodi-Master`** = daftar prodi + No. WA (format `62…`) + email Kaprodi/Kajur. **Lengkapi kontak asli di sini.**
-   - Tab **`Pengaturan`** = **semua variabel dinamis** (key-value) — ubah di sini, **tanpa edit kode**:
-     `NAMA_INSTANSI`, `EMAIL_ADMIN`, `BASE_URL` (domain aplikasi), `NOMOR_PREFIX`, `BATAS_WAKTU`, `EMAIL_AKTIF`, `WA_AKTIF`.
-   - *Catatan:* jika Spreadsheet dibiarkan kosong, `Code.gs` membuat semua tab + header (termasuk `Pengaturan`) otomatis.
+   - Tab **`Laporan-JumatBersih`** = database laporan (28 kolom). Template berisi **8 baris dummy** (tanggal `2026-06-19`).
+   - Tab **`Mengetahui`** = master **unit + Ketua Jurusan**: `Jurusan/Prodi/Unit | Nama | No. HP | Email | NIP | TTD`.
+     Sumber **daftar unit**, **kontak notifikasi** (No. HP + Email), dan **dropdown "Mengetahui"**. **Lengkapi di sini.**
+   - Tab **`Penanggung Jawab`** = master PJ (fleksibel): `Jurusan/Prodi/Unit | Nama | NIP | TTD`. **Tumbuh otomatis** tiap ada PJ baru mengisi.
+   - Tab **`Aktivitas`** = dataset aktivitas (1 kolom). **Tumbuh otomatis** dari "aktivitas lainnya"; admin boleh menambah manual.
+   - Tab **`Pengaturan`** = variabel dinamis (key-value): `NAMA_INSTANSI`, `EMAIL_ADMIN`, `BASE_URL`, `NOMOR_PREFIX`, `BATAS_WAKTU`, `EMAIL_AKTIF`, `WA_AKTIF` — ubah **tanpa edit kode**.
+   - *Catatan:* jika Spreadsheet kosong, `Code.gs` membuat semua tab + header otomatis (Mengetahui terisi 11 unit default).
 2. **Folder Drive:** buat satu folder untuk dokumentasi (foto/TTD). Salin **ID** folder dari URL.
 3. Buka [script.google.com](https://script.google.com) → **New Project** → hapus isi default → tempel seluruh `Code.gs`.
 4. Lengkapi blok **`CONFIG`** di atas — **hanya ID teknis & rahasia**:
@@ -146,9 +148,10 @@ hanya memakai Node bawaan.
 | Method | Endpoint | Hasil |
 |--------|----------|-------|
 | GET | `?action=getDashboard&tanggal=YYYY-MM-DD` | `{ rows[], totalPeserta, prodiList, fotos[] }` |
-| GET | `?action=getProdi` | `{ prodiList[] }` |
-| GET | `?action=getTtd&prodi=NAMA` | `{ ttdList: [{nama, img, url}] }` |
-| POST | `{ action:'submitLaporan', … }` | `{ status:'success', nomor, waktu }` |
+| GET | `?action=getProdi` | `{ prodiList[], mengetahui:[{unit,nama,nip,ttd}] }` |
+| GET | `?action=getPJ` | `{ pjList:[{unit,nama,nip,ttd}] }` |
+| GET | `?action=getAktivitas` | `{ aktivitasList[] }` |
+| POST | `{ action:'submitLaporan', … }` | `{ status:'success', nomor, waktu, updated }` |
 
 ## Catatan teknis
 - **Tanpa npm:** `build.js` & `Code.gs` tidak punya dependency. `vercel.json` memakai `installCommand: ""`.

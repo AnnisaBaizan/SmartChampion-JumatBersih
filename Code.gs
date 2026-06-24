@@ -11,7 +11,9 @@
 const CONFIG = {
   SPREADSHEET_ID: 'GANTI_DENGAN_SPREADSHEET_ID',   // ID Google Sheets arsip laporan
   SHEET_NAME: 'Laporan-JumatBersih',               // Tab arsip laporan
-  PRODI_SHEET_NAME: 'Prodi-Master',                // Tab master prodi + kontak notifikasi
+  MENGETAHUI_SHEET_NAME: 'Mengetahui',             // Master unit + Ketua Jurusan (kontak notifikasi + dropdown "Mengetahui")
+  PJ_SHEET_NAME: 'Penanggung Jawab',               // Master penanggung jawab (fleksibel, tumbuh otomatis)
+  AKTIVITAS_SHEET_NAME: 'Aktivitas',               // Tab dataset aktivitas (bisa ditambah admin)
   PENGATURAN_SHEET_NAME: 'Pengaturan',             // Tab pengaturan dinamis (key-value)
   DRIVE_FOLDER_ID: 'GANTI_DENGAN_FOLDER_ID',        // Folder Drive untuk foto/TTD
   WA_TOKEN: 'GANTI_DENGAN_TOKEN_FONNTE',            // rahasia → tetap di sini, JANGAN di Sheet
@@ -77,10 +79,39 @@ function _formUrl() { return String(_settings().BASE_URL || '').replace(/\/+$/, 
 // Kontak (No. WA & email) DI-LOAD dari tab "Prodi-Master" di Spreadsheet (lihat _getProdiMaster).
 // Daftar ini hanya dipakai untuk auto-membuat tab "Prodi-Master" saat pertama kali kosong.
 const PRODI_DEFAULT = [
-  'Keperawatan', 'Kebidanan', 'Keperawatan Gigi', 'Gizi', 'Sanitasi Lingkungan',
-  'Analis Kesehatan / TLM', 'Farmasi', 'Rekam Medis', 'Fisioterapi', 'Teknik Elektromedik',
+  'Jurusan Keperawatan',
+  'PS-Diploma Tiga Keperawatan Baturaja',
+  'PS-Diploma Tiga Keperawatan Lubuklinggau',
+  'PS-Diploma Tiga Keperawatan Lahat',
+  'Jurusan Gizi',
+  'Jurusan Kebidanan',
+  'PS-Diploma Tiga Kebidanan Muara Enim',
+  'Jurusan Farmasi',
+  'Jurusan Teknologi Laboratorium Medis',
+  'Jurusan Kesehatan Gigi',
+  'Jurusan Kesehatan Lingkungan',
 ];
-const PRODI_HEADERS = ['Prodi / Jurusan', 'No. WA (62...)', 'Email Kaprodi/Kajur'];
+const MENGETAHUI_HEADERS = ['Jurusan/Prodi/Unit', 'Nama', 'No. HP', 'Email Jurusan/Prodi', 'NIP', 'TTD'];
+const PJ_HEADERS = ['Jurusan/Prodi/Unit', 'Nama', 'NIP', 'TTD'];
+
+// ── Dataset Aktivitas (di-load dari tab "Aktivitas"; admin bisa menambah; "lainnya" auto-masuk) ──
+const AKTIVITAS_DEFAULT = [
+  'Pembersihan ruang kelas',
+  'Pembersihan ruang laboratorium',
+  'Pembersihan ruang pimpinan',
+  'Pembersihan ruang administrasi',
+  'Pembersihan ruang dosen',
+  'Pembersihan ruang arsip',
+  'Pembersihan ruang gudang',
+  'Pembersihan koridor dan area bersama',
+  'Pembersihan kamar mandi dan wastafel',
+  'Pengelolaan sampah terpilah (organik & anorganik)',
+  'Penataan meja & kursi (Clean Desk Culture / 5R)',
+  'Penataan dokumen & arsip',
+  'Perawatan tanaman / penghijauan lingkungan',
+  'Gotong royong halaman / area parkir',
+];
+const AKTIVITAS_HEADERS = ['Aktivitas'];
 
 // Urutan kolom sheet arsip (header otomatis dibuat saat sheet kosong)
 const HEADERS = [
@@ -101,9 +132,13 @@ function doGet(e) {
   if (action === 'getDashboard') {
     result = getDashboard(e.parameter.tanggal || '');
   } else if (action === 'getProdi') {
-    result = { prodiList: _getProdiMaster().map(p => p.prodi) };
-  } else if (action === 'getTtd') {
-    result = { ttdList: getTtdList(e.parameter.prodi || '') };
+    const m = _getMengetahui();
+    result = { prodiList: m.map(x => x.unit),
+      mengetahui: m.map(x => ({ unit: x.unit, nama: x.nama, nip: x.nip, ttd: x.ttd })) };
+  } else if (action === 'getAktivitas') {
+    result = { aktivitasList: _getAktivitas() };
+  } else if (action === 'getPJ') {
+    result = { pjList: _getPenanggungJawab() };
   } else {
     result = { error: 'Action tidak dikenal.' };
   }
@@ -146,28 +181,133 @@ function _sheet() {
   return sheet;
 }
 
-// ── Master prodi + kontak — DI-LOAD dari tab "Prodi-Master" ──
-// Kolom: Prodi / Jurusan | No. WA (62...) | Email Kaprodi/Kajur
-// Tab dibuat otomatis berisi PRODI_DEFAULT bila belum ada (kontak dikosongkan untuk diisi user).
-function _getProdiMaster() {
+// ── Master "Mengetahui" — unit + Ketua Jurusan + kontak (dropdown "Mengetahui") ──
+// Kolom: Jurusan/Prodi/Unit | Nama | No. HP | Email | NIP | TTD
+function _getMengetahui() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  let sheet = ss.getSheetByName(CONFIG.PRODI_SHEET_NAME);
+  let sheet = ss.getSheetByName(CONFIG.MENGETAHUI_SHEET_NAME);
   if (!sheet) {
-    sheet = ss.insertSheet(CONFIG.PRODI_SHEET_NAME);
-    sheet.appendRow(PRODI_HEADERS);
-    sheet.getRange(1, 1, 1, PRODI_HEADERS.length).setFontWeight('bold');
-    PRODI_DEFAULT.forEach(p => sheet.appendRow([p, '', '']));
+    sheet = ss.insertSheet(CONFIG.MENGETAHUI_SHEET_NAME);
+    sheet.appendRow(MENGETAHUI_HEADERS);
+    sheet.getRange(1, 1, 1, MENGETAHUI_HEADERS.length).setFontWeight('bold');
+    PRODI_DEFAULT.forEach(u => sheet.appendRow([u, '', '', '', '', '']));
     sheet.setFrozenRows(1);
   }
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  return sheet.getRange(2, 1, lastRow - 1, 3).getValues()
+  return sheet.getRange(2, 1, lastRow - 1, 6).getValues()
     .filter(r => String(r[0]).trim())
     .map(r => ({
-      prodi: String(r[0]).trim(),
-      wa:    String(r[1] || '').trim(),
-      email: String(r[2] || '').trim(),
+      unit: String(r[0]).trim(), nama: String(r[1] || '').trim(), hp: String(r[2] || '').trim(),
+      email: String(r[3] || '').trim(), nip: String(r[4] || '').trim(), ttd: String(r[5] || '').trim(),
     }));
+}
+// Kompat: notifikasi & dashboard memakai {prodi, wa, email} dari master Mengetahui
+function _getProdiMaster() {
+  return _getMengetahui().map(m => ({ prodi: m.unit, wa: m.hp, email: m.email }));
+}
+// Update NIP & TTD Ketua Jurusan pada baris unit (+ nama) yang cocok
+function _updateMengetahuiTtd(unit, nama, nip, ttdUrl) {
+  try {
+    const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(CONFIG.MENGETAHUI_SHEET_NAME);
+    if (!sheet) return;
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return;
+    const rows = sheet.getRange(2, 1, lastRow - 1, 2).getValues(); // unit, nama
+    for (let i = 0; i < rows.length; i++) {
+      const cocokUnit = String(rows[i][0]).trim() === String(unit).trim();
+      const namaKosong = !String(rows[i][1]).trim();
+      const cocokNama = String(rows[i][1]).trim().toLowerCase() === String(nama || '').trim().toLowerCase();
+      if (cocokUnit && (cocokNama || namaKosong)) {
+        if (nama && namaKosong) sheet.getRange(i + 2, 2).setValue(nama);
+        if (nip) sheet.getRange(i + 2, 5).setValue(nip);
+        if (ttdUrl && ttdUrl !== '-') sheet.getRange(i + 2, 6).setValue(ttdUrl);
+        return;
+      }
+    }
+  } catch (e) { Logger.log('Update Mengetahui error: ' + e.message); }
+}
+
+// ── Master "Penanggung Jawab" — fleksibel, tumbuh otomatis ──
+// Kolom: Jurusan/Prodi/Unit | Nama | NIP | TTD
+function _pjSheet() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(CONFIG.PJ_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.PJ_SHEET_NAME);
+    sheet.appendRow(PJ_HEADERS);
+    sheet.getRange(1, 1, 1, PJ_HEADERS.length).setFontWeight('bold');
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+function _getPenanggungJawab() {
+  const sheet = _pjSheet();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  return sheet.getRange(2, 1, lastRow - 1, 4).getValues()
+    .filter(r => String(r[1]).trim())
+    .map(r => ({ unit: String(r[0] || '').trim(), nama: String(r[1]).trim(), nip: String(r[2] || '').trim(), ttd: String(r[3] || '').trim() }));
+}
+// Simpan/segarkan PJ (dedupe by unit+nama; update NIP & TTD)
+function _simpanPJ(unit, nama, nip, ttdUrl) {
+  nama = String(nama || '').trim();
+  if (!nama) return;
+  try {
+    const lock = LockService.getScriptLock();
+    lock.waitLock(15000);
+    try {
+      const sheet = _pjSheet();
+      const lastRow = sheet.getLastRow();
+      const rows = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, 2).getValues() : [];
+      let row = 0;
+      for (let i = 0; i < rows.length; i++) {
+        if (String(rows[i][0]).trim() === String(unit).trim()
+            && String(rows[i][1]).trim().toLowerCase() === nama.toLowerCase()) { row = i + 2; break; }
+      }
+      if (!row) sheet.appendRow([unit, nama, nip || '', (ttdUrl && ttdUrl !== '-') ? ttdUrl : '']);
+      else {
+        if (nip) sheet.getRange(row, 3).setValue(nip);
+        if (ttdUrl && ttdUrl !== '-') sheet.getRange(row, 4).setValue(ttdUrl);
+      }
+    } finally { lock.releaseLock(); }
+  } catch (e) { Logger.log('Simpan PJ error: ' + e.message); }
+}
+
+// ── Dataset aktivitas — DI-LOAD dari tab "Aktivitas" (auto-dibuat berisi AKTIVITAS_DEFAULT) ──
+function _aktivitasSheet() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(CONFIG.AKTIVITAS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.AKTIVITAS_SHEET_NAME);
+    sheet.appendRow(AKTIVITAS_HEADERS);
+    sheet.getRange(1, 1, 1, 1).setFontWeight('bold');
+    AKTIVITAS_DEFAULT.forEach(a => sheet.appendRow([a]));
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+function _getAktivitas() {
+  const sheet = _aktivitasSheet();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  return sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat().map(x => String(x).trim()).filter(Boolean);
+}
+// Tambah aktivitas baru (dari "aktivitas lainnya") ke dataset bila belum ada
+function _tambahAktivitas(teks) {
+  if (!teks) return;
+  try {
+    const lock = LockService.getScriptLock();
+    lock.waitLock(15000);
+    try {
+      const sheet = _aktivitasSheet();
+      const ada = _getAktivitas().map(s => s.toLowerCase());
+      String(teks).split(',').map(s => s.trim()).filter(Boolean).forEach(item => {
+        if (ada.indexOf(item.toLowerCase()) === -1) { sheet.appendRow([item]); ada.push(item.toLowerCase()); }
+      });
+    } finally { lock.releaseLock(); }
+  } catch (e) { Logger.log('Tambah aktivitas error: ' + e.message); }
 }
 
 // ============================================================
@@ -226,6 +366,14 @@ function handleSubmitLaporan(d) {
     } finally {
       lock.releaseLock();
     }
+
+    // "Aktivitas lainnya" → tambahkan ke dataset agar muncul untuk laporan berikutnya
+    if (d.aktivitasLain) _tambahAktivitas(d.aktivitasLain);
+
+    // Simpan PJ ke master "Penanggung Jawab" (+ TTD) → muncul di dropdown berikutnya
+    _simpanPJ(d.prodi, d.namaKaprodi || d.namaPj, d.nipKaprodi || d.jabatanNip, ttdKaprodiUrl);
+    // Update NIP & TTD Ketua Jurusan di master "Mengetahui"
+    _updateMengetahuiTtd(d.prodi, d.namaKajur, d.nipKajur, ttdKajurUrl);
 
     // Notifikasi konfirmasi (di luar lock)
     if (_settings().EMAIL_AKTIF) _emailKonfirmasi(d, nomor, totalPeserta);
@@ -301,9 +449,12 @@ function _ttdFolder() {
 function _ttdSafe(s) { return String(s || '').replace(/[\/\\:*?"<>|]+/g, '_').trim(); }
 function _ttdFileName(prodi, nama) { return _ttdSafe(prodi) + '___' + _ttdSafe(nama) + '.png'; }
 
-// Simpan TTD (base64 PNG) ke Drive; overwrite bila nama sama. Return URL.
+// Simpan TTD ke Drive (base64) ATAU teruskan bila sudah berupa link (TTD dipakai ulang).
+// Return URL gambar yang bisa di-embed (thumbnail Drive).
 function _saveTtd(prodi, nama, dataUrl) {
-  if (!dataUrl || dataUrl.indexOf('base64,') === -1 || !nama) return '-';
+  if (!dataUrl) return '-';
+  if (/^https?:\/\//.test(dataUrl)) return dataUrl;        // sudah link tersimpan → pakai ulang
+  if (dataUrl.indexOf('base64,') === -1 || !nama) return '-';
   try {
     const folder = _ttdFolder();
     const fname = _ttdFileName(prodi, nama);
@@ -312,7 +463,7 @@ function _saveTtd(prodi, nama, dataUrl) {
     const bytes = Utilities.base64Decode(dataUrl.split('base64,')[1]);
     const file = folder.createFile(Utilities.newBlob(bytes, 'image/png', fname));
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return file.getUrl();
+    return 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w600';
   } catch (e) { return '-'; }
 }
 
