@@ -194,11 +194,12 @@
     const PRODI = ['Keperawatan','Kebidanan','Keperawatan Gigi','Gizi','Sanitasi Lingkungan',
       'Analis Kesehatan / TLM','Farmasi','Rekam Medis','Fisioterapi','Teknik Elektromedik'];
 
-    // Default tanggal = Jumat minggu ini
+    // Default tanggal = Jumat minggu pelaporan berjalan (lokal, anti-geser UTC)
     (function(){
-      const t = new Date(); const diff = (5 - t.getDay() + 7) % 7;
-      t.setDate(t.getDate() + diff);
-      document.getElementById('tglFilter').value = t.toISOString().slice(0,10);
+      const t = new Date();
+      t.setDate(t.getDate() - ((t.getDay() - 5 + 7) % 7));  // Jumat terakhir (termasuk hari ini)
+      const y = t.getFullYear(), m = String(t.getMonth()+1).padStart(2,'0'), d = String(t.getDate()).padStart(2,'0');
+      document.getElementById('tglFilter').value = `${y}-${m}-${d}`;
     })();
 
     function render(rows, peserta) {

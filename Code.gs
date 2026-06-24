@@ -192,27 +192,36 @@ function handleSubmitLaporan(d) {
     // ── Bagian KRITIS: penomoran + tulis baris di-LOCK agar tidak duplikat saat submit bersamaan ──
     const lock = LockService.getScriptLock();
     lock.waitLock(30000);  // antre maks 30 detik
-    let nomor;
+    let nomor, updated = false;
     try {
       const sheet = _sheet();
       const tahun = now.getFullYear();
       const lastRow = sheet.getLastRow();
-      let urut = 1;
-      if (lastRow > 1) {
-        const nomorList = sheet.getRange(2, 2, lastRow - 1, 1).getValues().flat();
-        urut = nomorList.filter(n => n && String(n).includes('/' + tahun)).length + 1;
-      }
-      nomor = _settings().NOMOR_PREFIX + '/' + String(urut).padStart(3, '0') + '/' + tahun;
 
-      sheet.appendRow([
-        now, nomor, d.tanggal, d.hari, d.prodi, d.namaPj, d.jabatanNip, d.hp,
-        Number(d.dosen) || 0, Number(d.tendik) || 0, Number(d.mahasiswa) || 0, totalPeserta,
-        (d.aktivitas || []).join(', '), d.aktivitasLain || '',
-        d.sebelum, d.sesudah, d.kendala || '', d.catatan || '',
-        d.namaKajur || '', d.nipKajur || '', d.namaKaprodi || '', d.nipKaprodi || '',
-        urlSebelum, urlSesudah, urlVideo, waktuKirim,
-        ttdKajurUrl, ttdKaprodiUrl,
-      ]);
+      // Cek apakah prodi ini SUDAH punya laporan untuk tanggal yang sama (anti-duplikat)
+      let existingRow = 0;
+      if (lastRow > 1) {
+        const keys = sheet.getRange(2, 3, lastRow - 1, 3).getValues(); // C=Tanggal, D=Hari, E=Prodi
+        for (let i = 0; i < keys.length; i++) {
+          if (_normTgl(keys[i][0]) === _normTgl(d.tanggal) && String(keys[i][2]) === String(d.prodi)) {
+            existingRow = i + 2; break;
+          }
+        }
+      }
+
+      if (existingRow) {
+        // PERBARUI baris lama — nomor & timestamp asli dipertahankan
+        updated = true;
+        nomor = sheet.getRange(existingRow, 2).getValue();
+        const tsLama = sheet.getRange(existingRow, 1).getValue() || now;
+        sheet.getRange(existingRow, 1, 1, HEADERS.length).setValues([_rowLaporan(d, tsLama, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo, ttdKajurUrl, ttdKaprodiUrl)]);
+      } else {
+        // Baris BARU — nomor urut tahun berjalan
+        const nomorList = lastRow > 1 ? sheet.getRange(2, 2, lastRow - 1, 1).getValues().flat() : [];
+        const urut = nomorList.filter(n => n && String(n).includes('/' + tahun)).length + 1;
+        nomor = _settings().NOMOR_PREFIX + '/' + String(urut).padStart(3, '0') + '/' + tahun;
+        sheet.appendRow(_rowLaporan(d, now, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo, ttdKajurUrl, ttdKaprodiUrl));
+      }
       SpreadsheetApp.flush();  // pastikan tertulis sebelum lock dilepas
     } finally {
       lock.releaseLock();
@@ -222,18 +231,43 @@ function handleSubmitLaporan(d) {
     if (_settings().EMAIL_AKTIF) _emailKonfirmasi(d, nomor, totalPeserta);
     if (_settings().WA_AKTIF)    _waKonfirmasi(d, nomor, totalPeserta);
 
-    return { status: 'success', nomor: nomor, waktu: waktuKirim };
+    return { status: 'success', nomor: nomor, waktu: waktuKirim, updated: updated };
   } catch (err) {
     return { status: 'error', error: err.message };
+  }
+}
+
+// Bentuk satu baris arsip (urut sesuai HEADERS) — dipakai untuk insert & update
+function _rowLaporan(d, ts, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo, ttdKajurUrl, ttdKaprodiUrl) {
+  return [
+    ts, nomor, d.tanggal, d.hari, d.prodi, d.namaPj, d.jabatanNip, d.hp,
+    Number(d.dosen) || 0, Number(d.tendik) || 0, Number(d.mahasiswa) || 0, totalPeserta,
+    (d.aktivitas || []).join(', '), d.aktivitasLain || '',
+    d.sebelum, d.sesudah, d.kendala || '', d.catatan || '',
+    d.namaKajur || '', d.nipKajur || '', d.namaKaprodi || '', d.nipKaprodi || '',
+    urlSebelum, urlSesudah, urlVideo, waktuKirim,
+    ttdKajurUrl, ttdKaprodiUrl,
+  ];
+}
+
+// ── Dapatkan/ buat folder (anti-duplikat saat submit bersamaan: double-checked locking) ──
+function _getOrCreateFolder(parent, name) {
+  const it = parent.getFoldersByName(name);
+  if (it.hasNext()) return it.next();
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+    const it2 = parent.getFoldersByName(name);  // cek ulang setelah dapat lock
+    return it2.hasNext() ? it2.next() : parent.createFolder(name);
+  } finally {
+    lock.releaseLock();
   }
 }
 
 // ── Folder Drive per Jumat ──
 function _getFolder(prodi, tanggal) {
   const parent = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
-  const name = 'JumatBersih_' + (tanggal || 'tanpa-tanggal');
-  const it = parent.getFoldersByName(name);
-  return it.hasNext() ? it.next() : parent.createFolder(name);
+  return _getOrCreateFolder(parent, 'JumatBersih_' + (tanggal || 'tanpa-tanggal'));
 }
 
 // ── Simpan satu media base64 (foto/video) → return URL ──
@@ -262,9 +296,7 @@ function _savePhotos(folder, arr, prefix) {
 
 // ── Folder TTD (subfolder "TTD" di dalam DRIVE_FOLDER_ID) ──
 function _ttdFolder() {
-  const parent = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
-  const it = parent.getFoldersByName('TTD');
-  return it.hasNext() ? it.next() : parent.createFolder('TTD');
+  return _getOrCreateFolder(DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID), 'TTD');
 }
 function _ttdSafe(s) { return String(s || '').replace(/[\/\\:*?"<>|]+/g, '_').trim(); }
 function _ttdFileName(prodi, nama) { return _ttdSafe(prodi) + '___' + _ttdSafe(nama) + '.png'; }
@@ -335,9 +367,8 @@ function getDashboard(tanggal) {
         const rTgl = _normTgl(r[2]);          // kolom Tanggal
         if (tanggal && rTgl !== tanggal) return;
         const prodi = r[4];
-        // ambil laporan terbaru per prodi
-        seen[prodi] = { prodi: prodi, status: 'SUDAH', waktu: r[25], ket: '' };
-        totalPeserta += Number(r[11]) || 0;
+        // ambil laporan terbaru per prodi (dedupe: peserta tidak dihitung ganda)
+        seen[prodi] = { prodi: prodi, status: 'SUDAH', waktu: r[25], ket: '', peserta: Number(r[11]) || 0 };
         // kumpulkan foto dokumentasi untuk slideshow
         // foto bisa banyak (URL dipisah koma); kolom Video (r[24]) tidak dimasukkan slideshow
         [['Sebelum', r[22]], ['Sesudah', r[23]]].forEach(pair => {
@@ -348,7 +379,8 @@ function getDashboard(tanggal) {
         });
       });
     }
-    Object.keys(seen).forEach(p => rows.push(seen[p]));
+    // total peserta dari hasil dedup (1 prodi dihitung sekali)
+    Object.keys(seen).forEach(p => { rows.push(seen[p]); totalPeserta += seen[p].peserta || 0; });
     const prodiList = _getProdiMaster().map(p => p.prodi);
     return { rows: rows, totalPeserta: totalPeserta, tanggal: tanggal, prodiList: prodiList, fotos: fotos };
   } catch (err) {
@@ -445,9 +477,17 @@ function _kirimWA(target, pesan) {
 function _tanggalJumatIni() {
   const tz = Session.getScriptTimeZone() || 'Asia/Jakarta';
   const t = new Date();
-  // mundur ke Jumat terakhir (termasuk hari ini bila Jumat)
+  // mundur ke Jumat terakhir (termasuk hari ini bila Jumat) = Jumat minggu pelaporan berjalan
   const back = (t.getDay() - 5 + 7) % 7;
   t.setDate(t.getDate() - back);
+  return Utilities.formatDate(t, tz, 'yyyy-MM-dd');
+}
+// Jumat minggu LALU (untuk menutup window pelaporan yang sudah lewat)
+function _tanggalJumatLalu() {
+  const tz = Session.getScriptTimeZone() || 'Asia/Jakarta';
+  const t = new Date();
+  const back = (t.getDay() - 5 + 7) % 7;
+  t.setDate(t.getDate() - back - 7);
   return Utilities.formatDate(t, tz, 'yyyy-MM-dd');
 }
 
@@ -460,7 +500,7 @@ function _kirimPengingat(tanggal, tahap) {
 Yth. Ketua Jurusan/Kaprodi *${p.prodi}*
 
 Laporan Jumat Bersih tanggal *${tanggal}* belum masuk ke sistem SMART Champion.
-Batas pengumpulan: *Jumat pukul ${S.BATAS_WAKTU}*.
+Batas pengumpulan: *paling lambat Kamis sebelum Jumat berikutnya*.
 
 Akses form: ${_formUrl()}
 ━━━━━━━━━━━━━━━━━━━━
@@ -480,16 +520,21 @@ _${S.NAMA_INSTANSI}_`;
   Logger.log(`Pengingat "${tahap.judul}" — ${belum.length} prodi belum lapor (${tanggal}).`);
 }
 
-// Dipanggil oleh trigger Jumat 12.00
-function pengingatAwal()    { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — BELUM MENGUMPULKAN LAPORAN' }); }
-// Dipanggil oleh trigger Jumat 14.30
-function pengingatMendesak(){ _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT MENDESAK — BATAS 15.00 WIB' }); }
-// Dipanggil oleh trigger Jumat 15.01
-function notifKeterlambatan(){ _kirimPengingat(_tanggalJumatIni(), { judul: 'NOTIFIKASI KETERLAMBATAN LAPORAN' }); }
+// Window pelaporan: Jumat (hari-H) s/d Kamis berikutnya. Pengingat tersebar dalam window;
+// status "terlambat" baru ditetapkan saat window ditutup (Jumat berikutnya pagi).
+// — Jumat (hari pelaksanaan): 3× pengingat
+function pengingatJumat1() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Laporan Jumat Bersih hari ini (1/3)' }); }
+function pengingatJumat2() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Laporan Jumat Bersih hari ini (2/3)' }); }
+function pengingatJumat3() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Laporan Jumat Bersih hari ini (3/3)' }); }
+// — Selasa: pengingat tengah window
+function pengingatSelasa() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Laporan Jumat Bersih minggu ini belum masuk' }); }
+// — Kamis: pengingat terakhir (hari terakhir window)
+function pengingatKamis()  { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT TERAKHIR — Batas pengumpulan hari ini (Kamis)' }); }
 
-// Dipanggil oleh trigger Senin 07.00 — rekap mingguan ke admin
-function rekapMingguan() {
-  const tanggal = _tanggalJumatIni();
+// Dipanggil oleh trigger Jumat 07.00 — TUTUP window minggu lalu: notif terlambat + rekap ke admin
+function tutupMingguan() {
+  const tanggal = _tanggalJumatLalu();
+  _kirimPengingat(tanggal, { judul: 'TERLAMBAT — Laporan Jumat Bersih minggu lalu belum masuk' });
   const total = _getProdiMaster().length || 1;
   const belum = _prodiBelumLapor(tanggal);
   const sudah = total - belum.length;
@@ -578,12 +623,14 @@ function pasangTrigger() {
   // Hapus trigger lama agar tidak dobel
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
 
-  // Jumat
-  ScriptApp.newTrigger('pengingatAwal').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(12).nearMinute(0).create();
-  ScriptApp.newTrigger('pengingatMendesak').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(14).nearMinute(30).create();
-  ScriptApp.newTrigger('notifKeterlambatan').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(15).nearMinute(1).create();
-  // Senin rekap
-  ScriptApp.newTrigger('rekapMingguan').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(7).nearMinute(0).create();
+  // Window 1 minggu (Jumat s/d Kamis). Jumat 3×, plus Selasa & Kamis.
+  ScriptApp.newTrigger('pengingatJumat1').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(12).nearMinute(0).create();
+  ScriptApp.newTrigger('pengingatJumat2').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(14).nearMinute(30).create();
+  ScriptApp.newTrigger('pengingatJumat3').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(15).nearMinute(1).create();
+  ScriptApp.newTrigger('pengingatSelasa').timeBased().onWeekDay(ScriptApp.WeekDay.TUESDAY).atHour(9).nearMinute(0).create();
+  ScriptApp.newTrigger('pengingatKamis').timeBased().onWeekDay(ScriptApp.WeekDay.THURSDAY).atHour(13).nearMinute(0).create();
+  // Jumat 07.00 — tutup window minggu lalu: tandai terlambat + rekap ke admin
+  ScriptApp.newTrigger('tutupMingguan').timeBased().onWeekDay(ScriptApp.WeekDay.FRIDAY).atHour(7).nearMinute(0).create();
 
-  Logger.log('Trigger terpasang: Jumat 12.00 / 14.30 / 15.01, Senin 07.00.');
+  Logger.log('Trigger terpasang: Jumat 12.00/14.30/15.01 (3×), Selasa 09.00, Kamis 13.00, Jumat 07.00 (tutup minggu lalu + rekap).');
 }

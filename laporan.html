@@ -91,6 +91,19 @@
     .uploader img { max-width: 100%; border-radius: 6px; margin-top: 8px; max-height: 150px; }
     .uploader input { display: none; }
 
+    /* ── Input link video ── */
+    .linkbox { display: flex; align-items: stretch; border: 1px solid #cfd8d2; border-radius: 8px;
+      background: #fbfdfc; overflow: hidden; }
+    .linkbox:focus-within { border-color: var(--green2); background: #fff; box-shadow: 0 0 0 2px rgba(30,132,73,.12); }
+    .linkbox-ic { display: flex; align-items: center; padding: 0 12px; font-size: 16px;
+      background: #eef3ef; border-right: 1px solid #e0e6e2; }
+    .linkbox input { flex: 1; border: none !important; background: transparent !important;
+      padding: 10px 12px; font-size: 13px; font-family: inherit; }
+    .linkbox input:focus { outline: none; }
+    .linkbox-open { display: flex; align-items: center; padding: 0 12px; text-decoration: none;
+      color: var(--green2); font-size: 16px; border-left: 1px solid #e0e6e2; }
+    .linkbox-open:hover { background: #eef3ef; }
+
     /* ── Multi-upload foto + video ── */
     .multi { display: flex; flex-wrap: wrap; gap: 10px; }
     .tile { position: relative; width: 100px; height: 100px; border-radius: 8px; overflow: hidden;
@@ -181,14 +194,17 @@
     .sig-modal small { display: block; text-align: center; color: #999; font-size: 11px; margin-top: 8px; }
     @media print { .sig-modal { display: none !important; } }
 
-    /* ── Tampilan laporan = "kertas" A4 (live preview + printable) ── */
-    #reportView { display: block; }
-    #reportDoc {                       /* kertas A4 */
-      width: 794px; background: #fff; color: #000;
+    /* ── Tampilan laporan = halaman A4 (live preview + printable, multi-halaman) ── */
+    #reportPages { transform-origin: top left; }
+    .page {                            /* satu halaman A4 (794 × 1123 @96dpi) */
+      width: 794px; min-height: 1123px; box-sizing: border-box;
+      background: #fff; color: #000; position: relative;
       font-family: 'Times New Roman', Times, serif; font-size: 11.3pt; line-height: 1.45;
-      padding: 40px 52px; box-shadow: 0 6px 26px rgba(0,0,0,.4);
-      transform-origin: top left;
+      padding: 48px 52px 60px; box-shadow: 0 6px 26px rgba(0,0,0,.4); margin-bottom: 16px;
     }
+    .page:last-child { margin-bottom: 0; }
+    .page .pageno { position: absolute; bottom: 18px; right: 26px; font-size: 9pt; color: #999; }
+    .rv-block { /* grup blok agar tidak terpotong saat paginasi */ }
     .rv-kop { width: 100%; display: block; }
     .rv-line { border: none; border-top: 3px solid #000; margin: 4px 0 14px; }
     .rv-title { text-align: center; font-weight: bold; text-transform: uppercase;
@@ -225,7 +241,11 @@
         background: #fff !important; border: none !important; box-shadow: none !important; }
       #reportView { display: block !important; padding: 0 !important; }
       .paper-scale { width: auto !important; height: auto !important; }
-      #reportDoc { width: 100% !important; transform: none !important; box-shadow: none !important; padding: 0 !important; }
+      #reportPages { transform: none !important; }
+      .page { width: 100% !important; min-height: auto !important; box-shadow: none !important;
+        margin: 0 !important; padding: 0 !important; break-after: page; page-break-after: always; }
+      .page:last-child { break-after: auto; page-break-after: avoid; }
+      .page .pageno { display: none !important; }
       @page { size: A4; margin: 16mm; }
     }
   </style>
@@ -383,9 +403,13 @@
             <input type="file" id="inpSesudah" accept="image/*" multiple hidden>
           </div>
           <div class="field">
-            <label class="lbl">Video Dokumentasi (Link)
-              <small style="color:#999;font-weight:400;"> — opsional, tempel link Google Drive / YouTube</small></label>
-            <input type="url" id="videoLink" name="videoLink" placeholder="https://drive.google.com/...   atau   https://youtu.be/...">
+            <label class="lbl">Video Dokumentasi
+              <small style="color:#999;font-weight:400;"> — opsional</small></label>
+            <div class="linkbox">
+              <span class="linkbox-ic">🎬</span>
+              <input type="url" id="videoLink" name="videoLink" placeholder="Tempel link Google Drive / YouTube…">
+              <a class="linkbox-open" id="videoOpen" href="#" target="_blank" rel="noopener" title="Buka link" hidden>↗</a>
+            </div>
             <div class="help">Unggah video ke Google Drive / YouTube, lalu tempel tautannya di sini (hemat penyimpanan institusi).</div>
           </div>
         </div>
@@ -457,7 +481,7 @@
 
       <aside class="col-preview">
         <div class="preview-head">📄 Pratinjau Laporan (PDF) — terisi otomatis</div>
-        <div id="reportView"><div class="paper-scale"><div id="reportDoc"></div></div></div>
+        <div id="reportView"><div class="paper-scale"><div id="reportPages"></div></div></div>
       </aside>
     </div><!-- /layout -->
   </div><!-- /wrap -->
@@ -539,24 +563,26 @@
     });
 
     // Default tanggal = Jumat terdekat (hari ini jika Jumat)
-    function jumatTerdekat(base) {
-      const t = base ? new Date(base + 'T00:00:00') : new Date();
-      const diff = (5 - t.getDay() + 7) % 7;   // maju ke Jumat (5)
-      t.setDate(t.getDate() + diff);
-      return t.toISOString().slice(0, 10);
-    }
+    // Format tanggal LOKAL (hindari pergeseran hari akibat toISOString/UTC)
+    function ymd(dt) { const y = dt.getFullYear(), m = String(dt.getMonth() + 1).padStart(2, '0'), d = String(dt.getDate()).padStart(2, '0'); return `${y}-${m}-${d}`; }
+    // Jumat minggu pelaporan berjalan = Jumat terakhir (termasuk hari ini bila Jumat)
+    function jumatBerjalan() { const t = new Date(); t.setDate(t.getDate() - ((t.getDay() - 5 + 7) % 7)); return ymd(t); }
     const tglEl = document.getElementById('tanggal');
-    tglEl.value = jumatTerdekat();
-    // Guard: tanggal kegiatan hanya boleh hari Jumat
-    tglEl.addEventListener('change', function () {
-      if (!this.value) return;
-      const d = new Date(this.value + 'T00:00:00');
-      if (d.getDay() !== 5) {
-        this.value = jumatTerdekat(this.value);
-        toast('Tanggal kegiatan harus hari Jumat — disesuaikan ke Jumat terdekat.', 'err');
-        refreshPreview();
-      }
-    });
+    tglEl.value = jumatBerjalan();
+    tglEl.readOnly = true;                  // dikunci ke Jumat minggu berjalan
+    tglEl.min = tglEl.max = tglEl.value;
+    tglEl.title = 'Terkunci otomatis ke Jumat minggu ini';
+    tglEl.style.background = '#eef2ef';
+
+    // Tombol "buka" link video muncul saat URL valid
+    (function () {
+      const vEl = document.getElementById('videoLink'), oEl = document.getElementById('videoOpen');
+      if (!vEl || !oEl) return;
+      vEl.addEventListener('input', function () {
+        const v = this.value.trim(), ok = /^https?:\/\//i.test(v);
+        oEl.hidden = !ok; if (ok) oEl.href = v;
+      });
+    })();
 
     // ── Dokumentasi: foto sebelum/sesudah (3–5) + video (maks 1) ──
     const MIN_FOTO = 3, MAX_FOTO = 5;
@@ -746,70 +772,95 @@
       const tglStr = d.tanggal ? new Date(d.tanggal + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
       const ttdImg = s => s ? `<div class="ttdimg"><img src="${s}"></div>` : '<div class="ttdimg"></div>';
       const idRow = (k, v) => `<tr><td class="k">${k}</td><td class="s">:</td><td>${v || dash}</td></tr>`;
-      document.getElementById('reportDoc').innerHTML = `
-        <img class="rv-kop" src="KOP.png">
-        <hr class="rv-line">
-        <div class="rv-title">Laporan Kegiatan Jumat Bersih</div>
-        <div class="rv-nomor">${d.nomor ? 'Nomor: ' + esc(d.nomor) : '<span style="color:#999">(nomor otomatis saat dikirim)</span>'}</div>
 
-        <div class="rv-h">A. Identitas Pelaporan</div>
-        <table class="rv-id">
-          ${idRow('Hari / Tanggal', esc(d.hari) + ', ' + esc(tglStr))}
-          ${idRow('Program Studi', esc(d.prodi))}
-          ${idRow('Penanggung Jawab', esc(d.namaPj))}
-          ${idRow('Jabatan / NIP', esc(d.jabatanNip))}
-          ${idRow('No. HP / WA', esc(d.hp))}
-        </table>
+      // Dokumen dipecah menjadi blok-blok; tiap blok tidak boleh terpotong antar halaman.
+      const blocks = [
+        `<img class="rv-kop" src="KOP.png"><hr class="rv-line">
+         <div class="rv-title">Laporan Kegiatan Jumat Bersih</div>
+         <div class="rv-nomor">${d.nomor ? 'Nomor: ' + esc(d.nomor) : '<span style="color:#999">(nomor otomatis saat dikirim)</span>'}</div>`,
 
-        <div class="rv-h">B. Data Kehadiran Peserta</div>
-        <table class="rv-id">
-          ${idRow('Dosen Hadir', d.dosen + ' orang')}
-          ${idRow('Tendik Hadir', d.tendik + ' orang')}
-          ${idRow('Mahasiswa Terlibat', d.mahasiswa + ' orang')}
-          ${idRow('Total Peserta', '<b>' + (d.dosen + d.tendik + d.mahasiswa) + ' orang</b>')}
-        </table>
+        `<div class="rv-h">A. Identitas Pelaporan</div>
+         <table class="rv-id">
+           ${idRow('Hari / Tanggal', esc(d.hari) + ', ' + esc(tglStr))}
+           ${idRow('Program Studi', esc(d.prodi))}
+           ${idRow('Penanggung Jawab', esc(d.namaPj))}
+           ${idRow('Jabatan / NIP', esc(d.jabatanNip))}
+           ${idRow('No. HP / WA', esc(d.hp))}
+         </table>`,
 
-        <div class="rv-h">C. Aktivitas yang Dilaksanakan</div>
-        <ul class="rv-list">${akt}</ul>
-        ${d.aktivitasLain ? '<div>Aktivitas lain: ' + esc(d.aktivitasLain) + '</div>' : ''}
+        `<div class="rv-h">B. Data Kehadiran Peserta</div>
+         <table class="rv-id">
+           ${idRow('Dosen Hadir', d.dosen + ' orang')}
+           ${idRow('Tendik Hadir', d.tendik + ' orang')}
+           ${idRow('Mahasiswa Terlibat', d.mahasiswa + ' orang')}
+           ${idRow('Total Peserta', '<b>' + (d.dosen + d.tendik + d.mahasiswa) + ' orang</b>')}
+         </table>`,
 
-        <div class="rv-h">D. Evaluasi Pelaksanaan</div>
-        <table class="rv-eval">
-          <tr><td class="k">Kondisi Sebelum</td><td>: ${esc(d.sebelum || '-')}</td></tr>
-          <tr><td class="k">Kondisi Sesudah</td><td>: ${esc(d.sesudah || '-')}</td></tr>
-          <tr><td class="k">Kendala</td><td>: ${esc(d.kendala || '-')}</td></tr>
-          <tr><td class="k">Catatan / Saran</td><td>: ${esc(d.catatan || '-')}</td></tr>
-        </table>
+        `<div class="rv-h">C. Aktivitas yang Dilaksanakan</div>
+         <ul class="rv-list">${akt}</ul>
+         ${d.aktivitasLain ? '<div>Aktivitas lain: ' + esc(d.aktivitasLain) + '</div>' : ''}`,
 
-        <div class="rv-h">E. Dokumentasi</div>
-        <div class="rv-fotos">${fotosHtml}</div>${videoNote}
+        `<div class="rv-h">D. Evaluasi Pelaksanaan</div>
+         <table class="rv-eval">
+           <tr><td class="k">Kondisi Sebelum</td><td>: ${esc(d.sebelum || '-')}</td></tr>
+           <tr><td class="k">Kondisi Sesudah</td><td>: ${esc(d.sesudah || '-')}</td></tr>
+           <tr><td class="k">Kendala</td><td>: ${esc(d.kendala || '-')}</td></tr>
+           <tr><td class="k">Catatan / Saran</td><td>: ${esc(d.catatan || '-')}</td></tr>
+         </table>`,
 
-        <div class="rv-h">F. Pernyataan &amp; Tanda Tangan</div>
-        <div class="rv-statement">Saya yang bertanda tangan di bawah ini menyatakan bahwa laporan Kegiatan Jumat Bersih
-          ini benar dan dapat dipertanggungjawabkan sebagai dokumentasi program budaya kerja
-          ${esc((typeof NAMA_INSTANSI !== 'undefined' && NAMA_INSTANSI) || 'Poltekkes Kemenkes Palembang')}.</div>
-        <div class="rv-ttd">
-          <div class="col">Mengetahui,<br>Ketua Jurusan${ttdImg(d.ttdKajur)}
-            <div class="nm">${esc(d.namaKajur) || dash}</div>NIP. ${esc(d.nipKajur) || dash}</div>
-          <div class="col">Palembang, ${esc(tglStr)}<br>Ka. Prodi / Pelapor${ttdImg(d.ttdKaprodi)}
-            <div class="nm">${esc(d.namaKaprodi) || esc(d.namaPj) || dash}</div>NIP. ${esc(d.nipKaprodi) || dash}</div>
-        </div>
-        <div class="rv-foot">Dokumen dihasilkan otomatis oleh Sistem SMART Champion — ${new Date().toLocaleString('id-ID')}</div>`;
+        `<div class="rv-h">E. Dokumentasi</div>
+         <div class="rv-fotos">${fotosHtml}</div>${videoNote}`,
+
+        `<div class="rv-h">F. Pernyataan &amp; Tanda Tangan</div>
+         <div class="rv-statement">Saya yang bertanda tangan di bawah ini menyatakan bahwa laporan Kegiatan Jumat Bersih
+           ini benar dan dapat dipertanggungjawabkan sebagai dokumentasi program budaya kerja Poltekkes Kemenkes Palembang.</div>
+         <div class="rv-ttd">
+           <div class="col">Mengetahui,<br>Ketua Jurusan${ttdImg(d.ttdKajur)}
+             <div class="nm">${esc(d.namaKajur) || dash}</div>NIP. ${esc(d.nipKajur) || dash}</div>
+           <div class="col">Palembang, ${esc(tglStr)}<br>Ka. Prodi / Pelapor${ttdImg(d.ttdKaprodi)}
+             <div class="nm">${esc(d.namaKaprodi) || esc(d.namaPj) || dash}</div>NIP. ${esc(d.nipKaprodi) || dash}</div>
+         </div>`,
+
+        `<div class="rv-foot">Dokumen dihasilkan otomatis oleh Sistem SMART Champion — ${new Date().toLocaleString('id-ID')}</div>`,
+      ];
+      paginate(blocks);
       scaleReport();
     }
 
-    // Skala "kertas" 794px agar pas dengan lebar kolom pratinjau (di layar saja)
+    // Pecah blok ke halaman A4; mulai halaman baru bila melebihi tinggi A4.
+    function paginate(blocks) {
+      const pages = document.getElementById('reportPages');
+      pages.style.transform = 'none';
+      pages.innerHTML = '';
+      const PAGE_H = 1123, SAFE = 1095;   // ambang tinggi konten per halaman
+      const mkPage = () => { const p = document.createElement('div'); p.className = 'page'; pages.appendChild(p); return p; };
+      let page = mkPage();
+      blocks.forEach(html => {
+        const grp = document.createElement('div'); grp.className = 'rv-block'; grp.innerHTML = html;
+        page.appendChild(grp);
+        if (page.scrollHeight > SAFE && page.querySelectorAll('.rv-block').length > 1) {
+          page.removeChild(grp);
+          page = mkPage();
+          page.appendChild(grp);
+        }
+      });
+      const all = pages.querySelectorAll('.page');
+      all.forEach((p, i) => { const n = document.createElement('div'); n.className = 'pageno'; n.textContent = 'Halaman ' + (i + 1) + ' / ' + all.length; p.appendChild(n); });
+      void PAGE_H;
+    }
+
+    // Skala halaman 794px agar pas dengan lebar kolom pratinjau (di layar saja)
     function scaleReport() {
-      const doc = document.getElementById('reportDoc');
+      const pages = document.getElementById('reportPages');
       const view = document.getElementById('reportView');
-      const wrap = doc && doc.parentElement;
-      if (!doc || !view || !wrap) return;
-      doc.style.transform = 'none';
-      const avail = view.clientWidth - 36;  // dikurangi padding #reportView
+      const wrap = pages && pages.parentElement;  // .paper-scale
+      if (!pages || !view || !wrap) return;
+      pages.style.transform = 'none';
+      const avail = view.clientWidth - 36;
       const scale = Math.min(1, avail / 794);
-      doc.style.transform = 'scale(' + scale + ')';
+      pages.style.transform = 'scale(' + scale + ')';
       wrap.style.width = (794 * scale) + 'px';
-      wrap.style.height = (doc.offsetHeight * scale) + 'px';
+      wrap.style.height = (pages.offsetHeight * scale) + 'px';
     }
     window.addEventListener('resize', scaleReport);
     function printReport(d) {
