@@ -116,6 +116,31 @@ hanya memakai Node bawaan.
 ### Mengubah pengaturan/kontak/prodi
 - Edit langsung di Spreadsheet (tab `Pengaturan`, `Prodi-Master`) — **tidak perlu rebuild/redeploy** apa pun.
 
+## 4. Pengujian — pastikan semua fungsi jalan
+
+### A. Frontend
+1. **Dashboard** (`/`): halaman tampil; **slideshow** bergeser otomatis & bisa diklik panah/titik; ganti **Tanggal Jumat** → **Muat** → tabel, statistik (Sudah/Belum/Kepatuhan/Total Peserta) berubah.
+2. **Form** (`/laporan.html`):
+   - Tanggal **terkunci ke Jumat** (read-only); dropdown **Program Studi** terisi.
+   - Isi A–F → **pratinjau A4 di kanan ikut berubah** (live).
+   - Foto: tambah **3–5** Sebelum & Sesudah (indikator jadi hijau ✓ saat ≥3; foto ke-6 ditolak).
+   - Link video: tempel URL → tombol **↗** muncul.
+   - TTD: tombol **✍️ Buat/Ubah** → modal → tanda tangan → **Simpan** → preview muncul.
+   - **Unduh PDF** → dialog cetak → *Save as PDF*: cek KOP, isi A–F, foto, TTD; dokumen panjang otomatis lanjut ke halaman berikutnya.
+   - **Submit**: mode demo → overlay "mode demo"; mode real → tersimpan + dapat **Nomor**. Reload halaman → banner **Unduh ulang** masih berfungsi.
+
+### B. Backend (editor Apps Script)
+1. `tesNotifikasi` → cek **Logs** + email/WA uji diterima.
+2. `tesPengingatSekarang` → cek Logs (pengingat ke prodi belum lapor).
+3. Submit 1 laporan (real) → baris muncul di tab `Laporan-JumatBersih`, foto/TTD ada di Drive, dashboard ter-update.
+4. **Anti-duplikat:** submit lagi prodi + tanggal yang sama → baris **diperbarui** (jumlah baris tetap, **nomor sama**), total peserta **tidak dobel**.
+5. **Konkuren (opsional):** dua prodi submit hampir bersamaan → dua **nomor berurutan**, tidak kembar.
+6. `getDashboard?tanggal=YYYY-MM-DD` (buka `GAS_URL` + query di browser) → JSON berisi `rows`/`fotos`.
+7. **Pengaturan dinamis:** ubah `NAMA_INSTANSI`/`BASE_URL` di tab `Pengaturan` → langsung muncul di notifikasi **tanpa redeploy**.
+
+### C. Cron (opsional)
+- Jalankan `pasangTrigger` → menu **Triggers** menampilkan 6 trigger (Jumat ×3, Selasa, Kamis, Jumat 07.00).
+
 ## Kontrak API (GAS)
 
 | Method | Endpoint | Hasil |
