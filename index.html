@@ -3,178 +3,239 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SMART Champion — Laporan Jumat Bersih</title>
+  <title>Dashboard SMART Champion — Jumat Bersih</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f4f1;
-      color: #222;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+    :root { --green: #145a32; --green2: #1e8449; }
+    body { font-family: Arial, sans-serif; background: #eef2ef; color: #222; }
+
     .app-header {
-      background: #145a32;
-      color: #fff;
-      padding: 14px 28px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,.3);
+      background: var(--green); color: #fff; padding: 12px 24px;
+      display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.3);
     }
-    .app-header h1 { font-size: 16px; font-weight: 700; }
+    .app-header h1 { font-size: 15px; font-weight: 700; }
     .app-header small { font-size: 11px; opacity: .8; }
-    .app-header .header-right { margin-left: auto; }
-    .btn-dash {
-      color: rgba(255,255,255,.9);
-      text-decoration: none;
-      font-size: 12px;
-      padding: 5px 12px;
-      border: 1px solid rgba(255,255,255,.3);
-      border-radius: 4px;
-    }
-    .btn-dash:hover { background: rgba(255,255,255,.12); }
+    .app-header a { margin-left: auto; color: #fff; text-decoration: none; font-size: 12px;
+      border: 1px solid rgba(255,255,255,.3); border-radius: 4px; padding: 5px 12px; }
+    .app-header a:hover { background: rgba(255,255,255,.12); }
+    .app-header a.btn-form { background: #fff; color: var(--green); font-weight: 700;
+      border-color: #fff; padding: 7px 16px; }
+    .app-header a.btn-form:hover { background: #eafaf0; }
 
-    .hero {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 20px;
-    }
-    .hero-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #145a32;
-      margin-bottom: 6px;
-      text-align: center;
-    }
-    .hero-sub {
-      font-size: 13px;
-      color: #777;
-      margin-bottom: 40px;
-      text-align: center;
-      max-width: 540px;
-      line-height: 1.6;
-    }
+    .wrap { max-width: 1040px; margin: 24px auto; padding: 0 16px 60px; }
 
-    .card-grid {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 36px 32px;
-      width: 300px;
-      text-align: center;
-      box-shadow: 0 4px 20px rgba(0,0,0,.08);
-      cursor: pointer;
-      text-decoration: none;
-      color: inherit;
-      border: 2px solid transparent;
-      transition: border-color .15s, box-shadow .15s, transform .15s;
-      display: block;
-    }
-    .card:hover {
-      border-color: #145a32;
-      box-shadow: 0 8px 32px rgba(20,90,50,.15);
-      transform: translateY(-3px);
-    }
-    .card-icon { font-size: 48px; margin-bottom: 16px; }
-    .card-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #145a32;
-      margin-bottom: 8px;
-    }
-    .card-desc { font-size: 12px; color: #888; line-height: 1.6; }
-    .card-badge {
-      display: inline-block;
-      margin-top: 16px;
-      padding: 3px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .badge-form { background: #d5f5e3; color: #1e8449; }
-    .badge-dash { background: #d6eaf8; color: #1a5276; }
+    .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .toolbar h2 { color: var(--green); font-size: 18px; }
+    .toolbar .spacer { margin-left: auto; }
+    .toolbar input[type=date] { padding: 7px 10px; border: 1px solid #cfd8d2; border-radius: 7px; font-size: 13px; }
+    .toolbar button { background: var(--green2); color: #fff; border: none; border-radius: 7px;
+      padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .toolbar .btn-isi { background: var(--green); color: #fff; text-decoration: none;
+      border-radius: 7px; padding: 9px 16px; font-size: 13px; font-weight: 700; }
+    .toolbar .btn-isi:hover { background: #0e3f23; }
 
-    footer {
-      text-align: center;
-      padding: 16px;
-      font-size: 11px;
-      color: #aaa;
-    }
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
+    @media (max-width: 760px){ .stats { grid-template-columns: 1fr 1fr; } }
+    .stat { background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 2px 10px rgba(0,0,0,.05);
+      border-left: 5px solid var(--green2); }
+    .stat .n { font-size: 26px; font-weight: 800; color: var(--green); }
+    .stat .l { font-size: 12px; color: #777; margin-top: 2px; }
+    .stat.warn { border-left-color: #e67e22; } .stat.warn .n { color: #ca6a16; }
+    .stat.blue { border-left-color: #2980b9; } .stat.blue .n { color: #21618c; }
+    .stat.purple { border-left-color: #8e44ad; } .stat.purple .n { color: #6c3483; }
+
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.05);
+      margin-bottom: 22px; overflow: hidden; }
+    .card > h3 { background: #eaf3ee; color: var(--green); font-size: 14px; padding: 12px 18px;
+      border-bottom: 1px solid #d9e2dc; }
+    .card .body { padding: 4px 0; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 11px 16px; text-align: left; border-bottom: 1px solid #eef2ef; }
+    th { background: #f6f9f7; color: #555; font-size: 12px; text-transform: uppercase; letter-spacing: .3px; }
+    tr:hover td { background: #fafdfb; }
+    .pill { display: inline-block; padding: 3px 11px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .pill.sudah { background: #d5f5e3; color: #1e8449; }
+    .pill.belum { background: #fdecea; color: #c0392b; }
+    .muted { color: #aaa; }
+    .notif-sent { color: #e67e22; font-size: 12px; }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    @media (max-width: 820px){ .grid2 { grid-template-columns: 1fr; } }
+
+    .notif-sample { background: #fff8e1; border: 1px solid #f0e0a8; border-radius: 10px; padding: 16px; font-size: 12.5px; line-height: 1.7; }
+    .notif-sample .tag { display: inline-block; background: #e67e22; color: #fff; font-size: 11px;
+      font-weight: 700; padding: 3px 10px; border-radius: 5px; margin-bottom: 8px; }
+    .notif-sample a { color: #1a5276; word-break: break-all; }
+
+    ol.steps { margin: 0; padding: 14px 18px 18px 34px; font-size: 13px; line-height: 1.7; }
+    ol.steps li { margin-bottom: 6px; }
+    ol.steps b { color: var(--green); }
+
+    #loading { text-align: center; color: #999; padding: 30px; font-size: 13px; }
   </style>
 </head>
 <body>
   <header class="app-header">
     <div>
-      <h1>🌿 SMART Champion — Jumat Bersih</h1>
-      <small>Politeknik Kesehatan Kemenkes Palembang — Champion Bergerak, Budaya Kerja Menguat</small>
+      <h1>📊 Dashboard SMART Champion</h1>
+      <small>Jumat Bersih — Poltekkes Kemenkes Palembang</small>
     </div>
-    <div class="header-right">
-      <a href="dashboard.html" class="btn-dash">📊 Dashboard</a>
-    </div>
+    <a href="laporan.html" class="btn-form">📝 Isi Laporan Jumat Bersih</a>
   </header>
 
-  <main class="hero">
-    <div class="hero-title">Laporan Kegiatan Jumat Bersih</div>
-    <div class="hero-sub">
-      Laporan diisi setiap hari Jumat oleh penanggung jawab masing-masing Jurusan/Program Studi.
-      Setelah dikirim, laporan otomatis terdokumentasi pada Dashboard SMART Champion.
+  <div class="wrap">
+    <div class="toolbar">
+      <h2>Status Laporan Jumat Bersih</h2>
+      <div class="spacer"></div>
+      <label style="font-size:12px;color:#777;">Tanggal Jumat:</label>
+      <input type="date" id="tglFilter">
+      <button onclick="loadDashboard()">🔄 Muat</button>
+      <a href="laporan.html" class="btn-isi">📝 Isi Laporan</a>
     </div>
 
-    <div class="card-grid">
-      <a href="laporan.html" class="card">
-        <div class="card-icon">🧹</div>
-        <div class="card-title">Isi Laporan Jumat Bersih</div>
-        <div class="card-desc">
-          Formulir laporan kegiatan Jumat Bersih: identitas, kehadiran, aktivitas,
-          evaluasi, dokumentasi foto, dan tanda tangan. Output otomatis berupa PDF.
-        </div>
-        <span class="card-badge badge-form">Form Laporan</span>
-      </a>
-
-      <a href="dashboard.html" class="card">
-        <div class="card-icon">📊</div>
-        <div class="card-title">Dashboard SMART Champion</div>
-        <div class="card-desc">
-          Pantau status laporan tiap prodi: sudah/belum lapor, kepatuhan,
-          total peserta, dan jadwal notifikasi otomatis Email + WhatsApp.
-        </div>
-        <span class="card-badge badge-dash">Monitoring</span>
-      </a>
+    <div class="stats">
+      <div class="stat"><div class="n" id="stSudah">–</div><div class="l">Prodi Sudah Lapor</div></div>
+      <div class="stat warn"><div class="n" id="stBelum">–</div><div class="l">Prodi Belum Lapor</div></div>
+      <div class="stat blue"><div class="n" id="stPatuh">–</div><div class="l">Kepatuhan</div></div>
+      <div class="stat purple"><div class="n" id="stPeserta">–</div><div class="l">Total Peserta</div></div>
     </div>
-  </main>
 
-  <footer>
-    SMART Champion — Politeknik Kesehatan Kemenkes Palembang &nbsp;|&nbsp; 100% gratis berbasis Google Apps Script
-  </footer>
+    <div class="card">
+      <h3>Rekap Status per Prodi / Jurusan</h3>
+      <div class="body">
+        <div id="loading">Memuat data dashboard…</div>
+        <table id="tbl" hidden>
+          <thead>
+            <tr><th>Prodi / Jurusan</th><th>Status Laporan</th><th>Waktu Kirim</th><th>Ket.</th></tr>
+          </thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+    </div>
 
-  <!-- ── Tombol Lapor Bug ── -->
-  <div id="aduanWrap">
-    <a id="aduanBug" href="__BUG_URL__" target="_blank" rel="noopener"
-       onclick="if(this.getAttribute('href').startsWith('__')){event.preventDefault();alert('Form Lapor Bug belum dikonfigurasi.\nHubungi admin SMART Champion.');}">
-      🐛 Lapor Bug
-    </a>
+    <div class="card">
+      <h3>Jadwal Notifikasi Otomatis</h3>
+      <div class="body">
+        <table>
+          <thead><tr><th>Waktu</th><th>Hari</th><th>Kondisi</th><th>Notifikasi Dikirim</th></tr></thead>
+          <tbody>
+            <tr><td>12.00 WIB</td><td>Setiap Jumat</td><td>Prodi belum lapor</td><td>Pengingat awal via Email + WhatsApp</td></tr>
+            <tr><td>14.30 WIB</td><td>Setiap Jumat</td><td>Masih belum lapor</td><td>Pengingat mendesak via Email + WhatsApp</td></tr>
+            <tr><td>15.01 WIB</td><td>Setiap Jumat</td><td>Masih belum lapor</td><td>Notifikasi resmi keterlambatan + log sistem</td></tr>
+            <tr><td>07.00 WIB</td><td>Setiap Senin</td><td>Belum lapor Jumat lalu</td><td>Rekap mingguan ke Admin & Pimpinan</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Contoh Notifikasi yang Diterima Prodi</h3>
+        <div class="body" style="padding:18px;">
+          <div class="notif-sample">
+            <span class="tag">NOTIFIKASI OTOMATIS — BELUM MENGUMPULKAN LAPORAN</span>
+            <div>Yth. Ketua Jurusan/Kaprodi <b>[NAMA_PRODI]</b></div>
+            <div style="margin:8px 0;">Laporan Jumat Bersih tanggal <b>[TANGGAL]</b> belum masuk ke sistem
+              SMART Champion. Batas pengumpulan: <b>Jumat pukul 15.00 WIB</b>.</div>
+            <div>Akses form: <a href="laporan.html">https://smartchampion-jumatbersih.vercel.app/laporan.html</a></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Alur Sistem SMART Champion</h3>
+        <ol class="steps">
+          <li><b>Prodi Login</b> — Masuk ke portal Poltekkes → Menu SMART Champion → Form Laporan</li>
+          <li><b>Isi &amp; Kirim Form</b> — Lengkapi seluruh bagian termasuk foto sebelum &amp; sesudah</li>
+          <li><b>Otomatis Tersimpan</b> — Data langsung tersimpan di database dan tampil di dashboard</li>
+          <li><b>Dashboard Update</b> — Status prodi berubah menjadi SUDAH dan waktu kirim tercatat</li>
+          <li><b>Cron Job Monitor</b> — Sistem memeriksa prodi yang belum lapor sesuai jadwal</li>
+          <li><b>Notifikasi Terkirim</b> — Email + WhatsApp dikirim otomatis ke Ketua Jurusan/Kaprodi</li>
+          <li><b>Arsip Terdokumentasi</b> — Laporan tersimpan permanen sebagai bukti dukung budaya kerja</li>
+        </ol>
+      </div>
+    </div>
   </div>
 
-  <style>
-    #aduanWrap { position: fixed; bottom: 20px; right: 20px; z-index: 998; }
-    #aduanBug {
-      background: #e74c3c; color: #fff;
-      padding: 10px 16px; border-radius: 24px;
-      font-size: 13px; font-weight: 600; text-decoration: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,.2); transition: all .2s;
+  <script>
+    const GAS_URL = '__GAS_URL__';
+    const PRODI = ['Keperawatan','Kebidanan','Keperawatan Gigi','Gizi','Sanitasi Lingkungan',
+      'Analis Kesehatan / TLM','Farmasi','Rekam Medis','Fisioterapi','Teknik Elektromedik'];
+
+    // Default tanggal = Jumat minggu ini
+    (function(){
+      const t = new Date(); const diff = (5 - t.getDay() + 7) % 7;
+      t.setDate(t.getDate() + diff);
+      document.getElementById('tglFilter').value = t.toISOString().slice(0,10);
+    })();
+
+    function render(rows, peserta) {
+      const body = document.getElementById('tblBody');
+      body.innerHTML = '';
+      let sudah = 0;
+      rows.forEach(r => {
+        if (r.status === 'SUDAH') sudah++;
+        const tr = document.createElement('tr');
+        const pill = r.status === 'SUDAH' ? '<span class="pill sudah">SUDAH</span>' : '<span class="pill belum">BELUM</span>';
+        const waktu = r.waktu ? r.waktu : '<span class="muted">–</span>';
+        let ket = '<span class="muted">–</span>';
+        if (r.status !== 'SUDAH' && r.notif) ket = '<span class="notif-sent">Notif terkirim</span>';
+        else if (r.ket) ket = r.ket;
+        tr.innerHTML = `<td>${r.prodi}</td><td>${pill}</td><td>${waktu}</td><td>${ket}</td>`;
+        body.appendChild(tr);
+      });
+      const total = rows.length || 1;
+      document.getElementById('stSudah').textContent = sudah;
+      document.getElementById('stBelum').textContent = rows.length - sudah;
+      document.getElementById('stPatuh').textContent = Math.round(sudah / total * 100) + '%';
+      document.getElementById('stPeserta').textContent = peserta;
+      document.getElementById('loading').hidden = true;
+      document.getElementById('tbl').hidden = false;
     }
-    #aduanBug:hover { transform: translateY(-2px); background: #c0392b; }
-    #aduanBug[href=""] , #aduanBug[href^="__"] { display: none; }
-  </style>
+
+    function demoData() {
+      // Data contoh sesuai template (dipakai bila GAS belum dikonfigurasi)
+      const map = {
+        'Keperawatan': {status:'SUDAH', waktu:'09.42 WIB'},
+        'Kebidanan': {status:'SUDAH', waktu:'10.15 WIB'},
+        'Keperawatan Gigi': {status:'BELUM', notif:true},
+        'Gizi': {status:'SUDAH', waktu:'11.05 WIB'},
+        'Sanitasi Lingkungan': {status:'SUDAH', waktu:'09.50 WIB'},
+        'Analis Kesehatan / TLM': {status:'SUDAH', waktu:'11.20 WIB'},
+        'Farmasi': {status:'SUDAH', waktu:'10.33 WIB'},
+        'Rekam Medis': {status:'BELUM', notif:true},
+        'Fisioterapi': {status:'BELUM', notif:true},
+        'Teknik Elektromedik': {status:'SUDAH', waktu:'08.55 WIB'},
+      };
+      return PRODI.map(p => ({ prodi: p, ...(map[p] || {status:'BELUM'}) }));
+    }
+
+    async function loadDashboard() {
+      document.getElementById('loading').hidden = false;
+      document.getElementById('tbl').hidden = true;
+      const tgl = document.getElementById('tglFilter').value;
+
+      if (GAS_URL.startsWith('__')) {
+        render(demoData(), 17);  // demo (template)
+        return;
+      }
+      try {
+        const res = await fetch(`${GAS_URL}?action=getDashboard&tanggal=${encodeURIComponent(tgl)}`);
+        const out = await res.json();
+        if (out.error) throw new Error(out.error);
+        // Gabungkan daftar prodi master (dari Spreadsheet) dengan data yang sudah lapor
+        const byProdi = {};
+        (out.rows || []).forEach(r => byProdi[r.prodi] = r);
+        const master = (out.prodiList && out.prodiList.length) ? out.prodiList : PRODI;
+        const rows = master.map(p => byProdi[p] || { prodi: p, status: 'BELUM' });
+        render(rows, out.totalPeserta || 0);
+      } catch (err) {
+        document.getElementById('loading').textContent = 'Gagal memuat: ' + err.message + ' (menampilkan data contoh).';
+        render(demoData(), 17);
+      }
+    }
+    loadDashboard();
+  </script>
 </body>
 </html>

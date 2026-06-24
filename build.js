@@ -19,7 +19,7 @@ const DIST = path.join(__dirname, 'dist');
 if (!fs.existsSync(DIST)) fs.mkdirSync(DIST, { recursive: true });
 
 // ── File HTML yang perlu diproses ──
-const HTML_FILES = ['index.html', 'laporan.html', 'dashboard.html'];
+const HTML_FILES = ['index.html', 'laporan.html'];
 
 HTML_FILES.forEach(file => {
   const src = path.join(SRC, file);

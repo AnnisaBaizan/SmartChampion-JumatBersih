@@ -15,9 +15,8 @@ build hanya memakai Node bawaan.
 
 | File | Fungsi |
 |------|--------|
-| `index.html` | Beranda — pilih *Isi Laporan* atau *Dashboard* |
+| `index.html` | **Dashboard SMART Champion** (halaman utama) — status per prodi, kepatuhan, jadwal notifikasi, + tombol *Isi Laporan* |
 | `laporan.html` | Form laporan Jumat Bersih (Bagian A–F) → kirim ke GAS → output PDF |
-| `dashboard.html` | Dashboard SMART Champion — status per prodi, kepatuhan, jadwal notifikasi |
 | `Code.gs` | Backend Google Apps Script (simpan Sheet, upload foto Drive, notif Email/WA, cron) |
 | `build.js` | Inject env (`__GAS_URL__`, dll) ke HTML → folder `dist/`. Hanya Node bawaan. |
 | `vercel.json` | Konfigurasi build Vercel (`node build.js` → `dist`) |
