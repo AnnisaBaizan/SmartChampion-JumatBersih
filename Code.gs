@@ -510,6 +510,68 @@ function rekapMingguan() {
 }
 
 // ============================================================
+//  TES NOTIFIKASI — jalankan manual dari editor untuk cek Email/WA
+//  (Edit TES_TARGET_* bila ingin kirim ke tujuan khusus.)
+// ============================================================
+const TES_TARGET_EMAIL = '';  // kosongkan → pakai EMAIL_ADMIN dari Pengaturan
+const TES_TARGET_WA    = '';  // kosongkan → pakai No. WA valid pertama di Prodi-Master
+
+function tesNotifikasi() {
+  const S = _settings();
+  const tz = Session.getScriptTimeZone() || 'Asia/Jakarta';
+  const stamp = Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm');
+  const log = [];
+
+  // ── Email ──
+  if (S.EMAIL_AKTIF) {
+    const to = TES_TARGET_EMAIL || S.EMAIL_ADMIN;
+    try {
+      MailApp.sendEmail({
+        to: to,
+        subject: '🔔 TES Notifikasi — SMART Champion Jumat Bersih',
+        htmlBody:
+          `<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.7">
+            <h3 style="color:#145a32">🔔 Tes Notifikasi Berhasil</h3>
+            <p>Ini email <b>uji coba</b> sistem SMART Champion.<br>
+            Instansi: <b>${S.NAMA_INSTANSI}</b><br>
+            Waktu: ${stamp}<br>
+            Form: <a href="${_formUrl()}">${_formUrl()}</a></p>
+            <p style="color:#888;font-size:11px">Jika Anda menerima email ini, konfigurasi notifikasi Email sudah benar.</p>
+          </div>`,
+      });
+      log.push('✅ Email tes terkirim ke ' + to);
+    } catch (e) { log.push('❌ Email tes gagal: ' + e.message); }
+  } else {
+    log.push('⏭️ EMAIL_AKTIF = FALSE (email dilewati).');
+  }
+
+  // ── WhatsApp (Fonnte) ──
+  if (S.WA_AKTIF) {
+    const target = TES_TARGET_WA ||
+      _getProdiMaster().map(p => p.wa).find(w => w && String(w).replace(/\D/g, '').length >= 8);
+    if (target) {
+      _kirimWA(target,
+        `🔔 *TES Notifikasi — SMART Champion*\n${S.NAMA_INSTANSI}\nWaktu: ${stamp}\nForm: ${_formUrl()}\n\n_Jika pesan ini diterima, konfigurasi WhatsApp sudah benar._`);
+      log.push('✅ WA tes dikirim ke ' + target + ' (cek penerima & Logs Fonnte).');
+    } else {
+      log.push('❌ Tidak ada No. WA valid (isi Prodi-Master atau TES_TARGET_WA).');
+    }
+  } else {
+    log.push('⏭️ WA_AKTIF = FALSE (WhatsApp dilewati).');
+  }
+
+  const hasil = log.join('\n');
+  Logger.log(hasil);
+  return hasil;
+}
+
+// Tes alur PENGINGAT (kirim ke semua prodi yang belum lapor Jumat ini) — untuk uji coba cron
+function tesPengingatSekarang() {
+  _kirimPengingat(_tanggalJumatIni(), { judul: 'TES PENGINGAT — (uji coba sistem)' });
+  return 'Tes pengingat dijalankan untuk tanggal ' + _tanggalJumatIni() + ' — cek Logs.';
+}
+
+// ============================================================
 //  SETUP TRIGGER — jalankan SEKALI manual dari editor Apps Script
 // ============================================================
 function pasangTrigger() {

@@ -71,7 +71,9 @@ hanya memakai Node bawaan.
    - *Execute as:* **Me** · *Who has access:* **Anyone**
    - Salin **Web app URL** → ini nilai `GAS_URL`.
    - Saat pertama, izinkan akses (Authorize) Sheets/Drive/Gmail.
-6. **(Opsional) Aktifkan notifikasi otomatis:** jalankan fungsi **`pasangTrigger`** sekali dari editor
+6. **(Opsional) Tes notifikasi:** jalankan fungsi **`tesNotifikasi`** dari editor untuk mengirim
+   email/WA uji coba (cek *Logs*, inbox, & WhatsApp). `tesPengingatSekarang` menguji alur pengingat prodi.
+7. **(Opsional) Aktifkan notifikasi otomatis:** jalankan fungsi **`pasangTrigger`** sekali dari editor
    (menu *Run*). Ini memasang trigger: Jumat 12.00 / 14.30 / 15.01 + rekap Senin 07.00.
 
 > **Subfolder otomatis di Drive:** foto/video disimpan per Jumat di folder `JumatBersih_<tanggal>`,
@@ -117,7 +119,8 @@ hanya memakai Node bawaan.
 
 ## A. Mengisi Laporan (penanggung jawab prodi)
 1. Buka **Dashboard** → klik **📝 Isi Laporan Jumat Bersih** (atau langsung ke `/laporan.html`).
-2. **A. Identitas:** tanggal (default Jumat terdekat), pilih **Program Studi**, isi nama PJ, jabatan/NIP, No. HP/WA.
+2. **A. Identitas:** tanggal **hanya bisa hari Jumat** (default Jumat terdekat; pilihan non-Jumat otomatis disesuaikan), pilih **Program Studi**, isi nama PJ, jabatan/NIP, No. HP/WA.
+   - Saat mengisi, **pratinjau PDF** di samping (desktop) / bawah (HP) ikut terisi otomatis.
 3. **B. Kehadiran:** jumlah dosen, tendik, mahasiswa (total dihitung otomatis).
 4. **C. Aktivitas:** centang semua kegiatan yang dilakukan; tambahkan "aktivitas lainnya" bila perlu.
 5. **D. Evaluasi:** pilih kondisi **Sebelum** & **Sesudah**, tulis kendala/saran (opsional).
