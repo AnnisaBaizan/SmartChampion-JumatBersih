@@ -77,6 +77,18 @@
     .uploader img { max-width: 100%; border-radius: 6px; margin-top: 8px; max-height: 150px; }
     .uploader input { display: none; }
 
+    /* ── Multi-upload foto + video ── */
+    .multi { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tile { position: relative; width: 100px; height: 100px; border-radius: 8px; overflow: hidden;
+      border: 1px solid #cfd8d2; background: #fafdfb; }
+    .tile img { width: 100%; height: 100%; object-fit: cover; }
+    .tile .rm { position: absolute; top: 3px; right: 3px; background: rgba(192,57,43,.92); color: #fff;
+      border: none; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 11px; line-height: 1; }
+    .tile.add { display: flex; flex-direction: column; align-items: center; justify-content: center;
+      cursor: pointer; border-style: dashed; color: var(--green2); }
+    .tile.add span { font-size: 26px; line-height: 1; }
+    .tile.add small { font-size: 10px; }
+
     .statement { font-size: 12.5px; line-height: 1.7; color: #444; background: #f7faf8;
       border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
 
@@ -107,6 +119,60 @@
     #done .box h3 { color: var(--green); margin: 8px 0; font-size: 20px; }
     #done .box p { font-size: 13px; color: #555; line-height: 1.6; margin-bottom: 18px; }
     #done .box .actions { flex-direction: column; }
+
+    /* ── Banner unduh ulang ── */
+    .redl { display: none; align-items: center; gap: 12px; background: #eafaf0;
+      border: 1px solid #bfe6cd; border-radius: 10px; padding: 12px 14px; margin-bottom: 18px;
+      font-size: 13px; color: #1e5631; }
+    .redl b { color: #145a32; }
+    .redl button { margin-left: auto; background: var(--green2); color: #fff; border: none;
+      border-radius: 7px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+    /* ── Signature pad (tanda tangan digital) ── */
+    .sigwrap { margin-top: 8px; }
+    .sigpad { width: 100%; height: 130px; border: 1px dashed #aac4b3; border-radius: 8px;
+      background: #fcfffd; touch-action: none; cursor: crosshair; display: block; }
+    .sigbar { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+    .sigbar small { color: #999; font-size: 11px; }
+    .sigbar button { background: #f0f2f0; border: 1px solid #d6ddd8; border-radius: 6px;
+      padding: 4px 10px; font-size: 11.5px; cursor: pointer; color: #555; }
+    .sigbar button:hover { background: #e6ebe7; }
+    .ttd-warn { display: flex; gap: 8px; background: #fff4e5; border: 1px solid #ffd9a8;
+      color: #8a5a12; font-size: 12px; line-height: 1.6; border-radius: 8px; padding: 11px 13px; margin-top: 10px; }
+    .ttd-warn b { color: #7a4e0a; }
+    .ttd-ack { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; font-weight: 700; color: #6b4a12; cursor: pointer; }
+    .ttd-ack input { margin-top: 2px; }
+
+    /* ── Tampilan laporan (printable) ── */
+    #reportView { display: none; }
+    #reportDoc { background: #fff; color: #000; max-width: 780px; margin: 0 auto; }
+    .rv-head { text-align: center; border-bottom: 3px double var(--green); padding-bottom: 10px; margin-bottom: 14px; }
+    .rv-head h1 { font-size: 18px; color: var(--green); margin: 0; letter-spacing: .5px; }
+    .rv-head .sub { font-size: 12px; color: #444; }
+    .rv-head .nomor { font-size: 12px; margin-top: 6px; }
+    .rv-sec { margin-bottom: 12px; page-break-inside: avoid; }
+    .rv-sec h4 { font-size: 12.5px; background: #eaf3ee; color: var(--green); padding: 5px 8px;
+      margin: 0 0 6px; border-left: 4px solid var(--green2); }
+    .rv-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .rv-tbl td { border: 1px solid #cdd8d1; padding: 5px 8px; vertical-align: top; }
+    .rv-tbl td.k { background: #f6f9f7; font-weight: 700; width: 200px; }
+    .rv-list { font-size: 12px; margin: 0; padding-left: 18px; }
+    .rv-fotos { display: flex; gap: 10px; flex-wrap: wrap; }
+    .rv-foto { flex: 1; min-width: 180px; text-align: center; font-size: 11px; }
+    .rv-foto img { width: 100%; border: 1px solid #ccc; border-radius: 4px; max-height: 220px; object-fit: cover; }
+    .rv-ttd { display: flex; justify-content: space-between; margin-top: 18px; font-size: 12px; }
+    .rv-ttd .col { text-align: center; width: 46%; }
+    .rv-ttd .space { height: 60px; }
+    .rv-foot { text-align: center; font-size: 10px; color: #888; margin-top: 18px;
+      border-top: 1px solid #eee; padding-top: 6px; }
+
+    @media print {
+      body { background: #fff; }
+      .app-header, .banner, .hint, #form, #status, #done, .redl { display: none !important; }
+      .wrap { margin: 0; padding: 0; max-width: none; }
+      #reportView { display: block !important; }
+      @page { margin: 14mm; }
+    }
   </style>
 </head>
 <body>
@@ -130,6 +196,11 @@
       Prodi yang belum mengumpulkan sebelum pukul <b>15.00 WIB</b> akan mendapatkan notifikasi otomatis.
     </div>
 
+    <div class="redl" id="redl">
+      📄 <div>Laporan terakhir: <b id="redlInfo"></b></div>
+      <button type="button" onclick="reDownload()">⬇️ Unduh ulang PDF</button>
+    </div>
+
     <form id="form">
       <!-- A. IDENTITAS -->
       <div class="section">
@@ -146,7 +217,7 @@
             </div>
           </div>
           <div class="field">
-            <label class="lbl">Jurusan / Program Studi <span class="req">*</span></label>
+            <label class="lbl">Program Studi (Prodi) <span class="req">*</span></label>
             <select name="prodi" id="prodi" required>
               <option value="">— Pilih Prodi —</option>
             </select>
@@ -238,32 +309,27 @@
         </div>
       </div>
 
-      <!-- E. DOKUMENTASI FOTO -->
+      <!-- E. DOKUMENTASI -->
       <div class="section">
-        <h3>E. DOKUMENTASI FOTO (wajib: minimal foto sebelum + sesudah)</h3>
+        <h3>E. DOKUMENTASI (Foto Sebelum &amp; Sesudah: 3–5 foto • Video: maks 1)</h3>
         <div class="body">
-          <div class="upload-grid">
-            <label class="uploader" for="fotoSebelum">
-              <div class="ic">📷</div>
-              <div class="t">Foto SEBELUM <span class="req" style="color:#c0392b">*</span></div>
-              <div class="s">Unggah Foto Sebelum</div>
-              <img id="prevSebelum" hidden>
-              <input type="file" id="fotoSebelum" accept="image/*">
-            </label>
-            <label class="uploader" for="fotoSesudah">
-              <div class="ic">📷</div>
-              <div class="t">Foto SESUDAH <span class="req" style="color:#c0392b">*</span></div>
-              <div class="s">Unggah Foto Sesudah</div>
-              <img id="prevSesudah" hidden>
-              <input type="file" id="fotoSesudah" accept="image/*">
-            </label>
-            <label class="uploader" for="fotoTambahan">
-              <div class="ic">📷</div>
-              <div class="t">Foto Tambahan</div>
-              <div class="s">Opsional</div>
-              <img id="prevTambahan" hidden>
-              <input type="file" id="fotoTambahan" accept="image/*">
-            </label>
+          <div class="field">
+            <label class="lbl">Foto SEBELUM <span class="req">*</span>
+              <small id="cntSebelum" style="color:#999;font-weight:400;"> — min 3, maks 5</small></label>
+            <div class="multi" id="gridSebelum"></div>
+            <input type="file" id="inpSebelum" accept="image/*" multiple hidden>
+          </div>
+          <div class="field">
+            <label class="lbl">Foto SESUDAH <span class="req">*</span>
+              <small id="cntSesudah" style="color:#999;font-weight:400;"> — min 3, maks 5</small></label>
+            <div class="multi" id="gridSesudah"></div>
+            <input type="file" id="inpSesudah" accept="image/*" multiple hidden>
+          </div>
+          <div class="field">
+            <label class="lbl">Video Dokumentasi
+              <small style="color:#999;font-weight:400;"> — opsional, 1 video, maks 25 MB</small></label>
+            <div id="videoBox"></div>
+            <input type="file" id="inpVideo" accept="video/*" hidden>
           </div>
         </div>
       </div>
@@ -280,13 +346,42 @@
           <div class="ttd-grid">
             <div class="field">
               <label class="lbl">Mengetahui, Ketua Jurusan</label>
-              <input type="text" name="namaKajur" placeholder="Nama Ketua Jurusan" style="margin-bottom:8px;">
+              <input type="text" name="namaKajur" id="namaKajur" placeholder="Nama Ketua Jurusan" style="margin-bottom:8px;">
               <input type="text" name="nipKajur" placeholder="NIP Ketua Jurusan">
+              <div class="sigwrap">
+                <select id="savedKajur" style="margin-bottom:6px;" onchange="pakaiTtdTersimpan('kajur')">
+                  <option value="">🖊️ Tanda tangan baru (gambar di bawah)</option>
+                </select>
+                <canvas class="sigpad" id="padKajur"></canvas>
+                <div class="sigbar"><small>Tanda tangan di kotak (mouse / sentuh)</small>
+                  <button type="button" onclick="clearPad('kajur')">Hapus</button></div>
+              </div>
             </div>
             <div class="field">
               <label class="lbl">Ka. Prodi / Pelapor</label>
-              <input type="text" name="namaKaprodi" placeholder="Nama Ka. Prodi" style="margin-bottom:8px;">
+              <input type="text" name="namaKaprodi" id="namaKaprodi" placeholder="Nama Ka. Prodi" style="margin-bottom:8px;">
               <input type="text" name="nipKaprodi" placeholder="NIP Ka. Prodi">
+              <div class="sigwrap">
+                <select id="savedKaprodi" style="margin-bottom:6px;" onchange="pakaiTtdTersimpan('kaprodi')">
+                  <option value="">🖊️ Tanda tangan baru (gambar di bawah)</option>
+                </select>
+                <canvas class="sigpad" id="padKaprodi"></canvas>
+                <div class="sigbar"><small>Tanda tangan di kotak (mouse / sentuh)</small>
+                  <button type="button" onclick="clearPad('kaprodi')">Hapus</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="ttd-warn">
+            ⚠️
+            <div>
+              <b>Tanda tangan akan disimpan ke dalam sistem (Google Drive)</b> dan dapat dipakai ulang
+              untuk laporan berikutnya melalui dropdown per prodi. Pastikan tanda tangan
+              <b>rapi, jelas, dan benar milik Anda</b> — jangan asal/sembarangan, karena akan tercetak
+              pada PDF laporan resmi dan tersimpan permanen. Jika kurang rapi, klik <b>Hapus</b> lalu ulangi.
+              <label class="ttd-ack">
+                <input type="checkbox" id="ttdAck">
+                Saya memastikan tanda tangan sudah rapi &amp; benar, dan setuju disimpan ke sistem.
+              </label>
             </div>
           </div>
         </div>
@@ -294,10 +389,13 @@
 
       <div class="actions">
         <button type="submit" class="btn btn-primary" id="btnSubmit">📤 Kirim Laporan</button>
-        <button type="button" class="btn btn-ghost" onclick="window.print()">🖨️ Pratinjau / Cetak PDF</button>
+        <button type="button" class="btn btn-ghost" onclick="printReport(gatherData())">🖨️ Pratinjau / Unduh PDF</button>
       </div>
     </form>
   </div>
+
+  <!-- Tampilan laporan untuk dicetak/diunduh sebagai PDF -->
+  <div id="reportView"><div id="reportDoc"></div></div>
 
   <div id="status"></div>
 
@@ -307,7 +405,7 @@
       <h3>Laporan Terkirim!</h3>
       <p id="doneMsg">Laporan Jumat Bersih Anda sudah tersimpan dan otomatis muncul di Dashboard SMART Champion.</p>
       <div class="actions">
-        <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Unduh PDF Laporan</button>
+        <button type="button" class="btn btn-primary" onclick="reDownload()">🖨️ Unduh PDF Laporan</button>
         <a class="btn btn-ghost" href="index.html" style="text-decoration:none;display:inline-block;">📊 Lihat Dashboard</a>
       </div>
     </div>
@@ -370,38 +468,81 @@
       document.getElementById('tanggal').value = t.toISOString().slice(0,10);
     })();
 
-    // ── Foto: kompres ke base64 (max 1000px, JPEG 0.7) ──
-    const fotos = { sebelum: '', sesudah: '', tambahan: '' };
-    function bindUpload(inputId, prevId, key) {
-      const input = document.getElementById(inputId);
-      const prev  = document.getElementById(prevId);
-      input.addEventListener('change', () => {
-        const file = input.files[0];
-        if (!file) return;
+    // ── Dokumentasi: foto sebelum/sesudah (3–5) + video (maks 1) ──
+    const MIN_FOTO = 3, MAX_FOTO = 5, MAX_VIDEO_MB = 25;
+    const docs = { sebelum: [], sesudah: [], video: '' };
+
+    function compressImage(file) {
+      return new Promise(resolve => {
         const reader = new FileReader();
         reader.onload = e => {
           const img = new Image();
           img.onload = () => {
-            const max = 1000;
-            let { width: w, height: h } = img;
-            if (w > max || h > max) {
-              if (w > h) { h = h * max / w; w = max; } else { w = w * max / h; h = max; }
-            }
-            const c = document.createElement('canvas');
-            c.width = w; c.height = h;
+            const max = 1000; let w = img.width, h = img.height;
+            if (w > max || h > max) { if (w > h) { h = h * max / w; w = max; } else { w = w * max / h; h = max; } }
+            const c = document.createElement('canvas'); c.width = w; c.height = h;
             c.getContext('2d').drawImage(img, 0, 0, w, h);
-            const data = c.toDataURL('image/jpeg', 0.7);
-            fotos[key] = data;
-            prev.src = data; prev.hidden = false;
+            resolve(c.toDataURL('image/jpeg', 0.7));
           };
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
       });
     }
-    bindUpload('fotoSebelum', 'prevSebelum', 'sebelum');
-    bindUpload('fotoSesudah', 'prevSesudah', 'sesudah');
-    bindUpload('fotoTambahan','prevTambahan','tambahan');
+    function renderMulti(key) {
+      const grid = document.getElementById(key === 'sebelum' ? 'gridSebelum' : 'gridSesudah');
+      const inputId = key === 'sebelum' ? 'inpSebelum' : 'inpSesudah';
+      const arr = docs[key];
+      grid.innerHTML = '';
+      arr.forEach((src, i) => {
+        const t = document.createElement('div'); t.className = 'tile';
+        t.innerHTML = `<img src="${src}"><button type="button" class="rm" title="Hapus" onclick="removeFoto('${key}',${i})">✕</button>`;
+        grid.appendChild(t);
+      });
+      if (arr.length < MAX_FOTO) {
+        const add = document.createElement('div'); add.className = 'tile add';
+        add.innerHTML = '<span>＋</span><small>Tambah</small>';
+        add.onclick = () => document.getElementById(inputId).click();
+        grid.appendChild(add);
+      }
+      const cnt = document.getElementById(key === 'sebelum' ? 'cntSebelum' : 'cntSesudah');
+      const ok = arr.length >= MIN_FOTO;
+      cnt.textContent = ` — ${arr.length}/${MAX_FOTO} foto` + (ok ? ' ✓' : ` (min ${MIN_FOTO})`);
+      cnt.style.color = ok ? '#1e8449' : '#c0392b';
+    }
+    function removeFoto(key, i) { docs[key].splice(i, 1); renderMulti(key); }
+    function bindMulti(key, inputId) {
+      document.getElementById(inputId).addEventListener('change', async function () {
+        for (const f of [...this.files]) {
+          if (docs[key].length >= MAX_FOTO) { toast('Maksimal ' + MAX_FOTO + ' foto.', 'err'); break; }
+          docs[key].push(await compressImage(f));
+        }
+        this.value = ''; renderMulti(key);
+      });
+    }
+    bindMulti('sebelum', 'inpSebelum'); bindMulti('sesudah', 'inpSesudah');
+    renderMulti('sebelum'); renderMulti('sesudah');
+
+    // ── Video (1) ──
+    function renderVideo(name) {
+      const box = document.getElementById('videoBox');
+      if (docs.video) {
+        box.innerHTML = `<video src="${docs.video}" controls style="width:100%;max-height:240px;border-radius:8px;background:#000;"></video>
+          <div class="sigbar"><small>${name || 'Video terpilih'}</small><button type="button" onclick="removeVideo()">Hapus video</button></div>`;
+      } else {
+        box.innerHTML = `<div class="uploader" onclick="document.getElementById('inpVideo').click()">
+          <div class="ic">🎬</div><div class="t">Unggah Video</div><div class="s">1 video, maks ${MAX_VIDEO_MB} MB</div></div>`;
+      }
+    }
+    function removeVideo() { docs.video = ''; document.getElementById('inpVideo').value = ''; renderVideo(); }
+    document.getElementById('inpVideo').addEventListener('change', function () {
+      const f = this.files[0]; if (!f) return;
+      if (f.size > MAX_VIDEO_MB * 1024 * 1024) { toast('Video terlalu besar (maks ' + MAX_VIDEO_MB + ' MB).', 'err'); this.value = ''; return; }
+      const r = new FileReader();
+      r.onload = e => { docs.video = e.target.result; renderVideo(f.name); };
+      r.readAsDataURL(f);
+    });
+    renderVideo();
 
     function toast(msg, type) {
       const s = document.getElementById('status');
@@ -410,63 +551,229 @@
       if (type !== 'loading') setTimeout(() => s.style.display = 'none', 4000);
     }
 
+    // ════════ TANDA TANGAN DIGITAL ════════
+    const sig = {};
+    function setupPad(role, canvasId) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      sig[role] = { canvas, ctx, data: '', locked: false };
+      function fit() {
+        const r = canvas.getBoundingClientRect();
+        canvas.width = r.width; canvas.height = r.height;
+        ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0b3d91';
+      }
+      setTimeout(fit, 40);
+      window.addEventListener('resize', () => { if (!sig[role].data) fit(); });
+      let drawing = false, last = null;
+      const pos = e => { const r = canvas.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: t.clientX - r.left, y: t.clientY - r.top }; };
+      const start = e => { if (sig[role].locked) return; drawing = true; last = pos(e); e.preventDefault(); };
+      const move = e => { if (!drawing) return; const p = pos(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p; sig[role].data = canvas.toDataURL('image/png'); e.preventDefault(); };
+      const end = () => { drawing = false; };
+      canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+      canvas.addEventListener('touchstart', start, { passive: false }); canvas.addEventListener('touchmove', move, { passive: false }); canvas.addEventListener('touchend', end);
+    }
+    setupPad('kajur', 'padKajur');
+    setupPad('kaprodi', 'padKaprodi');
+
+    function clearPad(role) {
+      const s = sig[role];
+      s.ctx.clearRect(0, 0, s.canvas.width, s.canvas.height);
+      s.data = ''; s.locked = false;
+      const sel = document.getElementById(role === 'kajur' ? 'savedKajur' : 'savedKaprodi');
+      if (sel) sel.value = '';
+    }
+    function drawImageToPad(role, dataUrl) {
+      const s = sig[role];
+      const img = new Image();
+      img.onload = () => {
+        s.ctx.clearRect(0, 0, s.canvas.width, s.canvas.height);
+        let w = img.width, h = img.height; const cw = s.canvas.width, ch = s.canvas.height;
+        const sc = Math.min(cw / w, ch / h); w *= sc; h *= sc;
+        s.ctx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h);
+      };
+      img.src = dataUrl;
+      s.data = dataUrl; s.locked = true;
+    }
+
+    // ── TTD tersimpan per prodi (dari Google Drive via GAS) ──
+    let TTD_SAVED = [];
+    function isiDropdownTtd(list) {
+      ['savedKajur', 'savedKaprodi'].forEach(id => {
+        const sel = document.getElementById(id); sel.length = 1;
+        list.forEach((t, i) => { const o = document.createElement('option'); o.value = String(i); o.textContent = '🖊️ ' + t.nama; sel.appendChild(o); });
+      });
+    }
+    function pakaiTtdTersimpan(role) {
+      const sel = document.getElementById(role === 'kajur' ? 'savedKajur' : 'savedKaprodi');
+      if (sel.value === '') { clearPad(role); return; }
+      const t = TTD_SAVED[Number(sel.value)];
+      if (!t) return;
+      drawImageToPad(role, t.img);
+      const namaEl = document.getElementById(role === 'kajur' ? 'namaKajur' : 'namaKaprodi');
+      if (namaEl && !namaEl.value) namaEl.value = t.nama;
+    }
+    async function muatTtdTersimpan() {
+      if (GAS_URL.startsWith('__')) return;
+      const prodi = document.getElementById('prodi').value;
+      if (!prodi) return;
+      try {
+        const res = await fetch(`${GAS_URL}?action=getTtd&prodi=${encodeURIComponent(prodi)}`);
+        const out = await res.json();
+        TTD_SAVED = out.ttdList || [];
+        isiDropdownTtd(TTD_SAVED);
+      } catch (e) { /* abaikan */ }
+    }
+    document.getElementById('prodi').addEventListener('change', muatTtdTersimpan);
+
+    // ════════ KUMPULKAN DATA + BANGUN LAPORAN PDF ════════
+    function gatherData(f) {
+      f = f || document.getElementById('form');
+      const aktivitas = [...f.querySelectorAll('input[name=aktivitas]:checked')].map(c => c.value);
+      return {
+        tanggal: f.tanggal.value, hari: f.hari.value, prodi: f.prodi.value,
+        namaPj: f.namaPj.value.trim(), jabatanNip: f.jabatanNip.value.trim(), hp: f.hp.value.trim(),
+        dosen: Number(f.dosen.value) || 0, tendik: Number(f.tendik.value) || 0, mahasiswa: Number(f.mahasiswa.value) || 0,
+        aktivitas, aktivitasLain: f.aktivitasLain.value.trim(),
+        sebelum: f.sebelum.value, sesudah: f.sesudah.value,
+        kendala: f.kendala.value.trim(), catatan: f.catatan.value.trim(),
+        namaKajur: f.namaKajur.value.trim(), nipKajur: f.nipKajur.value.trim(),
+        namaKaprodi: f.namaKaprodi.value.trim(), nipKaprodi: f.nipKaprodi.value.trim(),
+        fotoSebelum: docs.sebelum, fotoSesudah: docs.sesudah, video: docs.video,
+        ttdKajur: sig.kajur.data || '', ttdKaprodi: sig.kaprodi.data || '',
+      };
+    }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+    function buildReportView(d) {
+      const akt = (d.aktivitas && d.aktivitas.length) ? d.aktivitas.map(a => `<li>${esc(a)}</li>`).join('') : '<li><i>—</i></li>';
+      const fotoList = (arr, label) => (arr && arr.length) ? arr.map((s, i) => `<div class="rv-foto"><img src="${s}"><div>${label} ${i + 1}</div></div>`).join('') : '';
+      const fotosHtml = (fotoList(d.fotoSebelum, 'Sebelum') + fotoList(d.fotoSesudah, 'Sesudah')) || '<i>Tidak ada foto</i>';
+      const videoNote = d.video ? '<div style="font-size:11px;margin-top:6px;color:#555;">🎬 Video dokumentasi terlampir di sistem.</div>' : '';
+      const tglStr = d.tanggal ? new Date(d.tanggal + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
+      const ttdImg = s => s ? `<img src="${s}" style="height:55px;display:block;margin:2px auto;">` : '<div class="space"></div>';
+      document.getElementById('reportDoc').innerHTML = `
+        <div class="rv-head">
+          <img src="KOP.png" style="width:100%;max-width:700px;margin-bottom:8px;">
+          <h1>LAPORAN KEGIATAN JUMAT BERSIH</h1>
+          <div class="sub">SMART Champion — Champion Bergerak, Budaya Kerja Menguat</div>
+          <div class="nomor">${d.nomor ? 'Nomor: <b>' + esc(d.nomor) + '</b>' : ''}</div>
+        </div>
+        <div class="rv-sec"><h4>A. Identitas Pelaporan</h4>
+          <table class="rv-tbl">
+            <tr><td class="k">Tanggal / Hari</td><td>${esc(tglStr)} (${esc(d.hari)})</td></tr>
+            <tr><td class="k">Jurusan / Program Studi</td><td>${esc(d.prodi)}</td></tr>
+            <tr><td class="k">Penanggung Jawab</td><td>${esc(d.namaPj)}</td></tr>
+            <tr><td class="k">Jabatan / NIP</td><td>${esc(d.jabatanNip)}</td></tr>
+            <tr><td class="k">No. HP / WA</td><td>${esc(d.hp)}</td></tr>
+          </table></div>
+        <div class="rv-sec"><h4>B. Data Kehadiran Peserta</h4>
+          <table class="rv-tbl">
+            <tr><td class="k">Dosen Hadir</td><td>${d.dosen} orang</td></tr>
+            <tr><td class="k">Tendik Hadir</td><td>${d.tendik} orang</td></tr>
+            <tr><td class="k">Mahasiswa Terlibat</td><td>${d.mahasiswa} orang</td></tr>
+            <tr><td class="k">Total Peserta</td><td><b>${d.dosen + d.tendik + d.mahasiswa} orang</b></td></tr>
+          </table></div>
+        <div class="rv-sec"><h4>C. Aktivitas yang Dilaksanakan</h4>
+          <ul class="rv-list">${akt}</ul>
+          ${d.aktivitasLain ? '<div style="font-size:12px;margin-top:4px;">Lainnya: ' + esc(d.aktivitasLain) + '</div>' : ''}</div>
+        <div class="rv-sec"><h4>D. Evaluasi Pelaksanaan</h4>
+          <table class="rv-tbl">
+            <tr><td class="k">Kondisi Sebelum → Sesudah</td><td>${esc(d.sebelum || '-')} → ${esc(d.sesudah || '-')}</td></tr>
+            <tr><td class="k">Kendala</td><td>${esc(d.kendala || '-')}</td></tr>
+            <tr><td class="k">Catatan / Saran</td><td>${esc(d.catatan || '-')}</td></tr>
+          </table></div>
+        <div class="rv-sec"><h4>E. Dokumentasi</h4>
+          <div class="rv-fotos">${fotosHtml}</div>${videoNote}</div>
+        <div class="rv-sec"><h4>F. Pernyataan &amp; Tanda Tangan</h4>
+          <div style="font-size:11.5px;line-height:1.6;margin-bottom:8px;">Laporan Kegiatan Jumat Bersih ini benar dan dapat dipertanggungjawabkan sebagai dokumentasi program budaya kerja Poltekkes Kemenkes Palembang.</div>
+          <div class="rv-ttd">
+            <div class="col">Mengetahui, Ketua Jurusan${ttdImg(d.ttdKajur)}(<b>${esc(d.namaKajur || '..................')}</b>)<br>NIP. ${esc(d.nipKajur || '..................')}</div>
+            <div class="col">Palembang, ${esc(tglStr)}<br>Ka. Prodi / Pelapor${ttdImg(d.ttdKaprodi)}(<b>${esc(d.namaKaprodi || d.namaPj || '..................')}</b>)<br>NIP. ${esc(d.nipKaprodi || '..................')}</div>
+          </div></div>
+        <div class="rv-foot">Dicetak otomatis oleh Sistem SMART Champion — ${new Date().toLocaleString('id-ID')}</div>`;
+    }
+    function printReport(d) {
+      if (!d || !d.prodi || !d.tanggal) { toast('Lengkapi minimal Tanggal & Prodi sebelum cetak.', 'err'); return; }
+      buildReportView(d);
+      const oldTitle = document.title;
+      document.title = `Laporan_JumatBersih_${(d.prodi || '').replace(/\W+/g, '-')}_${d.tanggal}`;
+      setTimeout(() => { window.print(); document.title = oldTitle; }, 250);
+    }
+
+    // ── Simpan & unduh ulang laporan terakhir ──
+    let currentReport = null;
+    const LS_KEY = 'jb_last_report';
+    function showReDownload(d) {
+      document.getElementById('redlInfo').textContent = `${d.prodi} — ${d.tanggal}` + (d.nomor ? ` (${d.nomor})` : '');
+      document.getElementById('redl').style.display = 'flex';
+    }
+    function saveLast(d) {
+      currentReport = d;
+      try { localStorage.setItem(LS_KEY, JSON.stringify({ ...d, video: '' })); }  // video tidak disimpan di localStorage
+      catch (e) { try { localStorage.setItem(LS_KEY, JSON.stringify({ ...d, fotoSebelum: [], fotoSesudah: [], video: '' })); } catch (_) {} }
+      showReDownload(d);
+    }
+    function reDownload() {
+      const d = currentReport || JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+      if (!d) { toast('Belum ada laporan untuk diunduh.', 'err'); return; }
+      printReport(d);
+    }
+    (function initReDownload() {
+      try { const d = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); if (d) { currentReport = d; showReDownload(d); } } catch (e) {}
+    })();
+
     document.getElementById('form').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const f = ev.target;
 
-      if (!fotos.sebelum || !fotos.sesudah) {
-        toast('Foto SEBELUM dan SESUDAH wajib diunggah.', 'err');
+      if (docs.sebelum.length < MIN_FOTO || docs.sesudah.length < MIN_FOTO) {
+        toast(`Foto SEBELUM dan SESUDAH masing-masing minimal ${MIN_FOTO} foto (maks ${MAX_FOTO}).`, 'err');
         return;
       }
 
-      const aktivitas = [...f.querySelectorAll('input[name=aktivitas]:checked')].map(c => c.value);
+      // Konfirmasi penyimpanan TTD ke sistem (cegah TTD asal/sembarangan)
+      const adaTtd = !!(sig.kaprodi.data || sig.kajur.data);
+      const ack = document.getElementById('ttdAck');
+      if (adaTtd && ack && !ack.checked) {
+        toast('Centang dulu konfirmasi tanda tangan — pastikan rapi & benar sebelum disimpan ke sistem.', 'err');
+        ack.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
 
-      const payload = {
-        action: 'submitLaporan',
-        tanggal: f.tanggal.value,
-        hari: f.hari.value,
-        prodi: f.prodi.value,
-        namaPj: f.namaPj.value.trim(),
-        jabatanNip: f.jabatanNip.value.trim(),
-        hp: f.hp.value.trim(),
-        dosen: Number(f.dosen.value) || 0,
-        tendik: Number(f.tendik.value) || 0,
-        mahasiswa: Number(f.mahasiswa.value) || 0,
-        aktivitas: aktivitas,
-        aktivitasLain: f.aktivitasLain.value.trim(),
-        sebelum: f.sebelum.value,
-        sesudah: f.sesudah.value,
-        kendala: f.kendala.value.trim(),
-        catatan: f.catatan.value.trim(),
-        namaKajur: f.namaKajur.value.trim(),
-        nipKajur: f.nipKajur.value.trim(),
-        namaKaprodi: f.namaKaprodi.value.trim(),
-        nipKaprodi: f.nipKaprodi.value.trim(),
-        fotoSebelum: fotos.sebelum,
-        fotoSesudah: fotos.sesudah,
-        fotoTambahan: fotos.tambahan,
-      };
-
+      const data = gatherData(f);
       const btn = document.getElementById('btnSubmit');
       btn.disabled = true;
-      toast('Mengirim laporan...', 'loading');
 
+      // Demo mode (backend belum aktif) → tetap bisa unduh PDF, tanpa simpan server
+      if (GAS_URL.startsWith('__')) {
+        saveLast(data);
+        document.getElementById('doneMsg').textContent = 'Mode demo: laporan TIDAK tersimpan ke server (backend belum aktif), tetapi PDF tetap bisa diunduh.';
+        document.getElementById('done').style.display = 'flex';
+        btn.disabled = false;
+        return;
+      }
+
+      // Konfirmasi terakhir bila ada TTD baru yang akan disimpan permanen
+      if (adaTtd && !confirm('Tanda tangan akan DISIMPAN PERMANEN ke sistem (Google Drive) dan dapat dipakai ulang.\n\nPastikan tanda tangan sudah rapi & benar. Lanjutkan kirim?')) {
+        btn.disabled = false;
+        return;
+      }
+
+      toast('Mengirim laporan...', 'loading');
       try {
-        if (GAS_URL.startsWith('__')) {
-          throw new Error('GAS_URL belum dikonfigurasi (jalankan build.js dengan env GAS_URL).');
-        }
         const res = await fetch(GAS_URL, {
           method: 'POST',
-          // text/plain menghindari CORS preflight ke Apps Script
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight
+          body: JSON.stringify({ action: 'submitLaporan', ...data }),
         });
         const out = await res.json();
         if (out.status === 'success') {
           document.getElementById('status').style.display = 'none';
-          const dm = document.getElementById('doneMsg');
-          if (out.nomor) dm.textContent = 'Nomor laporan: ' + out.nomor + '. Tersimpan & muncul di Dashboard SMART Champion.';
+          data.nomor = out.nomor; data.waktu = out.waktu;
+          saveLast(data);
+          document.getElementById('doneMsg').textContent =
+            (out.nomor ? 'Nomor laporan: ' + out.nomor + '. ' : '') + 'Tersimpan & muncul di Dashboard. Unduh PDF di bawah.';
           document.getElementById('done').style.display = 'flex';
+          btn.disabled = false;
         } else {
           throw new Error(out.error || 'Gagal menyimpan laporan.');
         }

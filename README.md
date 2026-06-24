@@ -1,101 +1,157 @@
 # 🌿 SMART Champion — Laporan Jumat Bersih
 
-Realisasi digital dari **Template Laporan Kegiatan Jumat Bersih** Politeknik Kesehatan Kemenkes
-Palembang. Web app untuk mengisi laporan Jumat Bersih per Jurusan/Program Studi, otomatis
-tersimpan & terpantau di **Dashboard SMART Champion**, lengkap dengan notifikasi otomatis
-Email + WhatsApp bagi prodi yang belum mengumpulkan laporan.
+Aplikasi web pelaporan **Kegiatan Jumat Bersih** Politeknik Kesehatan Kemenkes Palembang —
+realisasi digital dari *Template Laporan Kegiatan Jumat Bersih*. Setiap Program Studi mengisi
+laporan tiap Jumat; data otomatis tersimpan dan terpantau di **Dashboard SMART Champion**,
+lengkap dengan dokumentasi foto/video, tanda tangan digital, output PDF, dan notifikasi
+otomatis Email + WhatsApp untuk prodi yang belum melapor.
 
-Dibangun mengikuti pola project **SimpelBMN**: frontend HTML statis + backend **Google Apps
-Script** + **Google Sheets/Drive**, di-deploy ke **Vercel**. **Tanpa npm / tanpa dependency** —
-build hanya memakai Node bawaan.
+Dibangun mengikuti pola **SimpelBMN**: frontend HTML statis + backend **Google Apps Script**
+(+ Google Sheets & Drive), di-deploy ke **Vercel**. **Tanpa npm / tanpa dependency** — build
+hanya memakai Node bawaan.
+
+🔗 **Demo:** https://smartchampion-jumatbersih.vercel.app
 
 ---
 
-## 🗂️ Struktur
+## ✨ Fitur
+
+- **2 halaman:** Dashboard (`/`) dan Form Laporan (`/laporan.html`).
+- **Form Bagian A–F** sesuai template resmi (identitas, kehadiran, aktivitas, evaluasi, dokumentasi, TTD).
+- **Dokumentasi:** Foto **Sebelum 3–5**, Foto **Sesudah 3–5**, dan **1 video** (maks 25 MB). Foto dikompres otomatis di sisi klien.
+- **Tanda tangan digital** (gambar di kanvas). TTD **disimpan ke Google Drive** dan bisa **dipakai ulang** lewat dropdown per prodi. Ada peringatan + checkbox konfirmasi agar TTD tidak asal/sembarangan.
+- **Output PDF** ber-**KOP resmi**, bisa diunduh setelah kirim dan **diunduh ulang** kapan saja.
+- **Dashboard SMART Champion:** statistik kepatuhan, rekap status per prodi, **slideshow dokumentasi foto**, jadwal & contoh notifikasi, dan alur sistem.
+- **Master prodi & kontak** di-load dari Spreadsheet (tab `Prodi-Master`) — satu sumber data.
+- **Notifikasi otomatis** (cron): pengingat Jumat 12.00 / 14.30 / 15.01 + rekap Senin 07.00.
+
+---
+
+## 🗂️ Struktur File
 
 | File | Fungsi |
 |------|--------|
-| `index.html` | **Dashboard SMART Champion** (halaman utama) — status per prodi, kepatuhan, jadwal notifikasi, + tombol *Isi Laporan* |
-| `laporan.html` | Form laporan Jumat Bersih (Bagian A–F) → kirim ke GAS → output PDF |
-| `Code.gs` | Backend Google Apps Script (simpan Sheet, upload foto Drive, notif Email/WA, cron) |
+| `index.html` | **Dashboard** (halaman utama) + tombol *Isi Laporan* + slideshow foto |
+| `laporan.html` | **Form** laporan (A–F), TTD digital, output PDF |
+| `Code.gs` | Backend Google Apps Script (Sheets, Drive, notif Email/WA, cron) |
 | `build.js` | Inject env (`__GAS_URL__`, dll) ke HTML → folder `dist/`. Hanya Node bawaan. |
 | `vercel.json` | Konfigurasi build Vercel (`node build.js` → `dist`) |
 | `.env.example` | Contoh variabel lingkungan |
-| `Template_Spreadsheet_JumatBersih.xlsx` | Template database (2 tab: `Laporan-JumatBersih` + `Prodi-Master`) |
-
-Form mengikuti template asli:
-**A.** Identitas Pelaporan · **B.** Data Kehadiran · **C.** Aktivitas ·
-**D.** Evaluasi · **E.** Dokumentasi Foto · **F.** Pernyataan & Tanda Tangan.
+| `KOP.png` | Kop surat resmi (dipakai di kepala PDF laporan) |
+| `Template_Spreadsheet_JumatBersih.xlsx` | Template database (tab `Laporan-JumatBersih` + `Prodi-Master`), berisi **data dummy** untuk uji coba |
 
 ---
 
-## 🚀 Cara Setup
+# 👩‍💻 Bagian Developer — Setup
 
-### 1. Backend — Google Apps Script
+## Prasyarat
+- Akun Google (untuk Apps Script, Sheets, Drive).
+- Akun Vercel + (opsional) Vercel CLI: `npm i -g vercel`.
+- Node.js (untuk menjalankan `build.js` secara lokal). **Tidak ada `npm install`** — tanpa dependency.
+- (Opsional) Akun [Fonnte](https://fonnte.com) untuk notifikasi WhatsApp (token gratis).
+
+## 1. Backend — Google Apps Script
 
 1. **Spreadsheet arsip:** impor `Template_Spreadsheet_JumatBersih.xlsx` ke Google Sheets
-   (*File → Import → Upload*), atau cukup buat Spreadsheet kosong — `Code.gs` otomatis
-   membuat tab `Laporan-JumatBersih` + header saat laporan pertama masuk. Salin **ID** dari URL.
-   - Tab `Laporan-JumatBersih` = database laporan (26 kolom).
-   - Tab `Prodi-Master` = referensi nomor WA & email tiap prodi (untuk mengisi `PRODI_MASTER` di `Code.gs`).
-2. Buat **folder Google Drive** untuk foto dokumentasi. Salin **ID** folder.
-3. Buka [script.google.com](https://script.google.com) → **New Project** → tempel isi `Code.gs`.
-4. Isi `CONFIG` di bagian atas:
+   (*File → Import → Upload → Replace/Create new*). Salin **ID** dari URL
+   (`https://docs.google.com/spreadsheets/d/`**`<ID>`**`/edit`).
+   - Tab **`Laporan-JumatBersih`** = database laporan (28 kolom). Template sudah berisi **7 baris dummy** (tanggal `2026-06-19`).
+   - Tab **`Prodi-Master`** = daftar prodi + No. WA (format `62…`) + email Kaprodi/Kajur. **Lengkapi kontak asli di sini.**
+   - *Catatan:* jika Spreadsheet dibiarkan kosong, `Code.gs` membuat tab + header otomatis saat laporan pertama masuk.
+2. **Folder Drive:** buat satu folder untuk dokumentasi (foto/video/TTD). Salin **ID** folder dari URL.
+3. Buka [script.google.com](https://script.google.com) → **New Project** → hapus isi default → tempel seluruh `Code.gs`.
+4. Lengkapi blok **`CONFIG`** di atas:
    - `SPREADSHEET_ID`, `DRIVE_FOLDER_ID`
-   - `EMAIL_ADMIN` (penerima rekap)
-   - `WA_TOKEN` + `WA_AKTIF: true` jika memakai WhatsApp ([fonnte.com](https://fonnte.com) — token gratis)
-5. **Master prodi & kontak di-load dari Spreadsheet**, bukan dari `Code.gs`. Buka tab
-   `Prodi-Master` lalu isi **No. WA (format `62…`)** & **email** tiap Kaprodi/Kajur.
-   Tab ini juga jadi sumber daftar prodi untuk dropdown form & baris dashboard
-   (lewat action `getProdi` / `getDashboard`). Tab dibuat otomatis bila belum ada.
-6. **Deploy → New deployment → Web app**
-   - *Execute as:* **Me**
-   - *Who has access:* **Anyone**
+   - `EMAIL_ADMIN` (penerima rekap mingguan)
+   - WhatsApp (opsional): `WA_TOKEN` + ubah `WA_AKTIF: true`
+5. **Deploy → New deployment → Web app**
+   - *Execute as:* **Me** · *Who has access:* **Anyone**
    - Salin **Web app URL** → ini nilai `GAS_URL`.
-7. (Opsional) Jalankan fungsi **`pasangTrigger`** sekali dari editor untuk mengaktifkan
-   notifikasi otomatis (Jumat 12.00 / 14.30 / 15.01, rekap Senin 07.00).
+   - Saat pertama, izinkan akses (Authorize) Sheets/Drive/Gmail.
+6. **(Opsional) Aktifkan notifikasi otomatis:** jalankan fungsi **`pasangTrigger`** sekali dari editor
+   (menu *Run*). Ini memasang trigger: Jumat 12.00 / 14.30 / 15.01 + rekap Senin 07.00.
 
-### 2. Frontend — Vercel
+> **Subfolder otomatis di Drive:** foto/video disimpan per Jumat di folder `JumatBersih_<tanggal>`,
+> dan tanda tangan di subfolder `TTD/` (nama file `<Prodi>___<Nama>.png`) agar bisa dipakai ulang.
 
-1. Salin env: `cp .env.example .env` lalu isi `GAS_URL` & `ADMIN_PASSWORD`.
-2. Build lokal (uji): `node build.js` → hasil di `dist/`.
+## 2. Frontend — Vercel
+
+1. Salin env: `cp .env.example .env`, lalu isi `GAS_URL` dan `ADMIN_PASSWORD`.
+2. **Build lokal (uji):**
    ```bash
    GAS_URL="https://script.google.com/macros/s/XXXX/exec" ADMIN_PASSWORD="rahasia" node build.js
+   # hasil ada di folder dist/
    ```
-3. Deploy ke Vercel — set Environment Variables (`GAS_URL`, `ADMIN_PASSWORD`, `BUG_URL` opsional).
-   Vercel menjalankan `node build.js` otomatis (lihat `vercel.json`).
+3. **Deploy ke Vercel** (salah satu):
+   - **CLI:** `vercel login` → `vercel link` → `vercel deploy --prod` (set env di dashboard atau `--build-env`).
+   - **Dashboard:** import repo GitHub → tambah Environment Variables (`GAS_URL`, `ADMIN_PASSWORD`, `BUG_URL` opsional) → Deploy.
+   - Vercel menjalankan `node build.js` otomatis (lihat `vercel.json`).
 
-> **Catatan:** Tanpa `GAS_URL`, dashboard tetap menampilkan **data contoh** sesuai template
-> dan form akan memberi tahu bahwa backend belum dikonfigurasi — berguna untuk pratinjau.
+> **Mode demo:** tanpa `GAS_URL`, dashboard tampil **data contoh** + slideshow contoh, dan form
+> tetap bisa mengisi & **mengunduh PDF** (tidak tersimpan ke server). Berguna untuk pratinjau.
 
----
+## Kontrak API (GAS)
 
-## 🔔 Alur Notifikasi Otomatis (Cron)
+| Method | Endpoint | Hasil |
+|--------|----------|-------|
+| GET | `?action=getDashboard&tanggal=YYYY-MM-DD` | `{ rows[], totalPeserta, prodiList, fotos[] }` |
+| GET | `?action=getProdi` | `{ prodiList[] }` |
+| GET | `?action=getTtd&prodi=NAMA` | `{ ttdList: [{nama, img, url}] }` |
+| POST | `{ action:'submitLaporan', … }` | `{ status:'success', nomor, waktu }` |
 
-| Waktu | Hari | Kondisi | Aksi |
-|-------|------|---------|------|
-| 12.00 WIB | Jumat | Prodi belum lapor | Pengingat awal (Email + WA) |
-| 14.30 WIB | Jumat | Masih belum lapor | Pengingat mendesak |
-| 15.01 WIB | Jumat | Masih belum lapor | Notifikasi keterlambatan + log |
-| 07.00 WIB | Senin | Belum lapor Jumat lalu | Rekap mingguan ke Admin/Pimpinan |
-
-Diatur lewat *time-driven triggers* Apps Script (fungsi `pasangTrigger`).
-
----
-
-## 📄 Output PDF
-
-Setelah laporan dikirim, tombol **Unduh PDF Laporan** memakai dialog cetak browser
-(*Save as PDF*) — tanpa library eksternal. Foto sebelum/sesudah dikompres di sisi klien
-(maks 1000px, JPEG 0.7) sebelum dikirim agar hemat kuota.
+## Catatan teknis
+- **Tanpa npm:** `build.js` & `Code.gs` tidak punya dependency. `vercel.json` memakai `installCommand: ""`.
+- **Foto** dikompres ke maks 1000px / JPEG 0.7 sebelum dikirim. **Video** maks 25 MB (batas aman payload Apps Script).
+- POST ke GAS memakai `Content-Type: text/plain` untuk menghindari CORS preflight.
 
 ---
 
-## 🛠️ Kontrak API (GAS)
+# 🧑‍🏫 Bagian User — Cara Penggunaan
 
-- `GET  ?action=getProdi` → `{ prodiList:[…] }` (daftar prodi dari tab `Prodi-Master`)
-- `GET  ?action=getDashboard&tanggal=YYYY-MM-DD` → `{ rows:[{prodi,status,waktu,ket}], totalPeserta, prodiList }`
-- `POST { action:'submitLaporan', … }` → `{ status:'success', nomor, waktu }`
+## A. Mengisi Laporan (penanggung jawab prodi)
+1. Buka **Dashboard** → klik **📝 Isi Laporan Jumat Bersih** (atau langsung ke `/laporan.html`).
+2. **A. Identitas:** tanggal (default Jumat terdekat), pilih **Program Studi**, isi nama PJ, jabatan/NIP, No. HP/WA.
+3. **B. Kehadiran:** jumlah dosen, tendik, mahasiswa (total dihitung otomatis).
+4. **C. Aktivitas:** centang semua kegiatan yang dilakukan; tambahkan "aktivitas lainnya" bila perlu.
+5. **D. Evaluasi:** pilih kondisi **Sebelum** & **Sesudah**, tulis kendala/saran (opsional).
+6. **E. Dokumentasi:**
+   - **Foto Sebelum:** unggah **3–5 foto** (klik **＋ Tambah**; hapus dengan **✕**). Indikator berubah hijau ✓ bila ≥ 3.
+   - **Foto Sesudah:** sama, **3–5 foto**.
+   - **Video:** opsional, **1 video** maks 25 MB.
+7. **F. Pernyataan & Tanda Tangan:**
+   - **Gambar tanda tangan** di kotak (pakai mouse/sentuh) untuk Ketua Jurusan & Ka. Prodi.
+   - Jika sudah pernah membuat TTD, pilih dari **dropdown** "🖊️ …" — TTD tersimpan otomatis muncul per prodi.
+   - ⚠️ **Penting:** TTD **disimpan permanen** ke sistem & dipakai ulang. Pastikan **rapi & benar** — kalau jelek klik **Hapus** lalu ulangi. Centang konfirmasi sebelum kirim.
+8. Klik **📤 Kirim Laporan**. Setelah sukses, klik **🖨️ Unduh PDF Laporan**.
+   - **Unduh ulang:** banner di atas form ("Laporan terakhir …") bisa diklik untuk mengunduh PDF lagi kapan saja.
+   - Tombol **🖨️ Pratinjau / Unduh PDF** juga bisa dipakai sebelum kirim untuk mengecek hasil.
+
+> Saat dialog cetak muncul, pilih **"Save as PDF"** sebagai tujuan untuk menyimpan file.
+
+## B. Memantau Dashboard (admin/pimpinan)
+1. Buka halaman utama (`/`).
+2. **Pilih Tanggal Jumat** lalu klik **🔄 Muat**.
+3. Lihat ringkasan: **Sudah/Belum Lapor, Kepatuhan, Total Peserta**, dan tabel status per prodi.
+4. **📸 Slideshow** menampilkan dokumentasi foto Jumat tersebut (otomatis bergeser; bisa diklik panah/titik).
+5. Tabel **Jadwal Notifikasi** & **Alur Sistem** menjelaskan kapan pengingat dikirim.
+
+## C. Notifikasi Otomatis
+Prodi yang belum melapor akan menerima Email + WhatsApp:
+
+| Waktu | Hari | Aksi |
+|-------|------|------|
+| 12.00 WIB | Jumat | Pengingat awal |
+| 14.30 WIB | Jumat | Pengingat mendesak |
+| 15.01 WIB | Jumat | Notifikasi keterlambatan + log |
+| 07.00 WIB | Senin | Rekap mingguan ke Admin/Pimpinan |
+
+---
+
+## ❓ Troubleshooting singkat
+- **Form bilang "Mode demo"** → `GAS_URL` belum diset di Vercel. Set env lalu redeploy.
+- **TTD lama tidak muncul di dropdown** → pastikan backend aktif & prodi sudah dipilih (dropdown dimuat saat memilih prodi).
+- **Video gagal** → ukuran > 25 MB; perkecil durasi/resolusi.
+- **Dashboard kosong** → pilih tanggal Jumat yang ada datanya (data dummy template: `2026-06-19`).
 
 ---
 

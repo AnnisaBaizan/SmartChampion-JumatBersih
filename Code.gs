@@ -38,7 +38,8 @@ const HEADERS = [
   'Dosen', 'Tendik', 'Mahasiswa', 'Total Peserta', 'Aktivitas', 'Aktivitas Lain',
   'Kondisi Sebelum', 'Kondisi Sesudah', 'Kendala', 'Catatan',
   'Nama Kajur', 'NIP Kajur', 'Nama Kaprodi', 'NIP Kaprodi',
-  'Foto Sebelum', 'Foto Sesudah', 'Foto Tambahan', 'Waktu Kirim',
+  'Foto Sebelum', 'Foto Sesudah', 'Video', 'Waktu Kirim',
+  'TTD Ketua Jurusan', 'TTD Ka Prodi',
 ];
 
 // ================================================
@@ -51,6 +52,8 @@ function doGet(e) {
     result = getDashboard(e.parameter.tanggal || '');
   } else if (action === 'getProdi') {
     result = { prodiList: _getProdiMaster().map(p => p.prodi) };
+  } else if (action === 'getTtd') {
+    result = { ttdList: getTtdList(e.parameter.prodi || '') };
   } else {
     result = { error: 'Action tidak dikenal.' };
   }
@@ -141,9 +144,13 @@ function handleSubmitLaporan(d) {
 
     // Upload foto ke Drive
     const folder = _getFolder(d.prodi, d.tanggal);
-    const urlSebelum  = _savePhoto(folder, d.fotoSebelum,  `${d.prodi}_${d.tanggal}_SEBELUM`);
-    const urlSesudah  = _savePhoto(folder, d.fotoSesudah,  `${d.prodi}_${d.tanggal}_SESUDAH`);
-    const urlTambahan = _savePhoto(folder, d.fotoTambahan, `${d.prodi}_${d.tanggal}_TAMBAHAN`);
+    const urlSebelum = _savePhotos(folder, d.fotoSebelum, `${d.prodi}_${d.tanggal}_SEBELUM`);
+    const urlSesudah = _savePhotos(folder, d.fotoSesudah, `${d.prodi}_${d.tanggal}_SESUDAH`);
+    const urlVideo   = _saveMedia(folder, d.video, `${d.prodi}_${d.tanggal}_VIDEO`);
+
+    // Simpan TTD ke Drive (folder TTD) agar bisa dipakai ulang lewat dropdown
+    const ttdKajurUrl   = _saveTtd(d.prodi, d.namaKajur,   d.ttdKajur);
+    const ttdKaprodiUrl = _saveTtd(d.prodi, d.namaKaprodi, d.ttdKaprodi);
 
     sheet.appendRow([
       now, nomor, d.tanggal, d.hari, d.prodi, d.namaPj, d.jabatanNip, d.hp,
@@ -151,7 +158,8 @@ function handleSubmitLaporan(d) {
       (d.aktivitas || []).join(', '), d.aktivitasLain || '',
       d.sebelum, d.sesudah, d.kendala || '', d.catatan || '',
       d.namaKajur || '', d.nipKajur || '', d.namaKaprodi || '', d.nipKaprodi || '',
-      urlSebelum, urlSesudah, urlTambahan, waktuKirim,
+      urlSebelum, urlSesudah, urlVideo, waktuKirim,
+      ttdKajurUrl, ttdKaprodiUrl,
     ]);
 
     // Notifikasi konfirmasi
@@ -172,22 +180,85 @@ function _getFolder(prodi, tanggal) {
   return it.hasNext() ? it.next() : parent.createFolder(name);
 }
 
-// ── Simpan satu foto base64 → return URL ──
-function _savePhoto(folder, dataUrl, filename) {
+// ── Simpan satu media base64 (foto/video) → return URL ──
+function _saveMedia(folder, dataUrl, filename) {
   if (!dataUrl || dataUrl.indexOf('base64,') === -1) return '-';
   try {
     const parts = dataUrl.split('base64,');
-    const meta = parts[0];           // data:image/jpeg;
-    const mime = (meta.match(/data:(.*?);/) || [])[1] || 'image/jpeg';
-    const ext = mime.split('/')[1] || 'jpg';
+    const mime = (parts[0].match(/data:(.*?);/) || [])[1] || 'application/octet-stream';
+    const ext = (mime.split('/')[1] || 'bin').split('+')[0];
     const bytes = Utilities.base64Decode(parts[1]);
-    const blob = Utilities.newBlob(bytes, mime, filename + '.' + ext);
-    const file = folder.createFile(blob);
+    const file = folder.createFile(Utilities.newBlob(bytes, mime, filename + '.' + ext));
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return file.getUrl();
   } catch (e) {
     return '-';
   }
+}
+
+// ── Simpan banyak foto (array base64) → return URL dipisah koma ──
+function _savePhotos(folder, arr, prefix) {
+  if (!arr || !arr.length) return '-';
+  const urls = [];
+  arr.forEach((d, i) => { const u = _saveMedia(folder, d, prefix + '_' + (i + 1)); if (u !== '-') urls.push(u); });
+  return urls.length ? urls.join(', ') : '-';
+}
+
+// ── Folder TTD (subfolder "TTD" di dalam DRIVE_FOLDER_ID) ──
+function _ttdFolder() {
+  const parent = DriveApp.getFolderById(CONFIG.DRIVE_FOLDER_ID);
+  const it = parent.getFoldersByName('TTD');
+  return it.hasNext() ? it.next() : parent.createFolder('TTD');
+}
+function _ttdSafe(s) { return String(s || '').replace(/[\/\\:*?"<>|]+/g, '_').trim(); }
+function _ttdFileName(prodi, nama) { return _ttdSafe(prodi) + '___' + _ttdSafe(nama) + '.png'; }
+
+// Simpan TTD (base64 PNG) ke Drive; overwrite bila nama sama. Return URL.
+function _saveTtd(prodi, nama, dataUrl) {
+  if (!dataUrl || dataUrl.indexOf('base64,') === -1 || !nama) return '-';
+  try {
+    const folder = _ttdFolder();
+    const fname = _ttdFileName(prodi, nama);
+    const ex = folder.getFilesByName(fname);
+    while (ex.hasNext()) ex.next().setTrashed(true);  // hapus versi lama
+    const bytes = Utilities.base64Decode(dataUrl.split('base64,')[1]);
+    const file = folder.createFile(Utilities.newBlob(bytes, 'image/png', fname));
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    return file.getUrl();
+  } catch (e) { return '-'; }
+}
+
+// Daftar TTD tersimpan untuk satu prodi → [{nama, img(dataUrl base64), url}]
+function getTtdList(prodi) {
+  try {
+    const folder = _ttdFolder();
+    const prefix = _ttdSafe(prodi) + '___';
+    const files = folder.getFiles();
+    const out = [];
+    while (files.hasNext()) {
+      const f = files.next();
+      const n = f.getName();
+      if (prodi && n.indexOf(prefix) !== 0) continue;
+      out.push({
+        nama: n.replace(prefix, '').replace(/\.png$/i, ''),
+        img: 'data:image/png;base64,' + Utilities.base64Encode(f.getBlob().getBytes()),
+        url: f.getUrl(),
+      });
+    }
+    return out;
+  } catch (e) { return []; }
+}
+
+// Ubah URL file Drive → URL gambar yang bisa di-embed (untuk slideshow dashboard).
+// URL gambar langsung (mis. data dummy) diteruskan apa adanya.
+function _driveImg(url) {
+  if (!url || url === '-') return '';
+  url = String(url);
+  if (url.indexOf('drive.google.com') > -1) {
+    const m = url.match(/[-\w]{25,}/);
+    return m ? 'https://drive.google.com/thumbnail?id=' + m[0] + '&sz=w1200' : '';
+  }
+  return /^https?:\/\//.test(url) ? url : '';
 }
 
 // ============================================================
@@ -200,6 +271,7 @@ function getDashboard(tanggal) {
     const rows = [];
     let totalPeserta = 0;
     const seen = {};
+    const fotos = [];
 
     if (lastRow > 1) {
       const data = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
@@ -210,11 +282,19 @@ function getDashboard(tanggal) {
         // ambil laporan terbaru per prodi
         seen[prodi] = { prodi: prodi, status: 'SUDAH', waktu: r[25], ket: '' };
         totalPeserta += Number(r[11]) || 0;
+        // kumpulkan foto dokumentasi untuk slideshow
+        // foto bisa banyak (URL dipisah koma); kolom Video (r[24]) tidak dimasukkan slideshow
+        [['Sebelum', r[22]], ['Sesudah', r[23]]].forEach(pair => {
+          String(pair[1] || '').split(',').forEach(u => {
+            const img = _driveImg(u.trim());
+            if (img) fotos.push({ prodi: prodi, label: pair[0], url: img });
+          });
+        });
       });
     }
     Object.keys(seen).forEach(p => rows.push(seen[p]));
     const prodiList = _getProdiMaster().map(p => p.prodi);
-    return { rows: rows, totalPeserta: totalPeserta, tanggal: tanggal, prodiList: prodiList };
+    return { rows: rows, totalPeserta: totalPeserta, tanggal: tanggal, prodiList: prodiList, fotos: fotos };
   } catch (err) {
     return { error: err.message };
   }

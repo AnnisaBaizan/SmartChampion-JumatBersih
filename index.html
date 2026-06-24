@@ -73,6 +73,23 @@
     ol.steps b { color: var(--green); }
 
     #loading { text-align: center; color: #999; padding: 30px; font-size: 13px; }
+
+    /* ── Slideshow dokumentasi foto ── */
+    .slideshow { position: relative; max-width: 720px; margin: 0 auto; }
+    .slide-frame { position: relative; overflow: hidden; border-radius: 10px; background: #0d1f15; aspect-ratio: 16/10; }
+    .slide-frame img { width: 100%; height: 100%; object-fit: contain; display: none; }
+    .slide-frame img.active { display: block; }
+    .sl-cap { position: absolute; left: 0; right: 0; bottom: 36px; color: #fff; font-size: 12.5px;
+      background: linear-gradient(transparent, rgba(0,0,0,.75)); padding: 22px 14px 10px; pointer-events: none; }
+    .sl-cap b { color: #aef5c8; }
+    .sl-nav { position: absolute; top: calc(50% - 18px); transform: translateY(-50%); background: rgba(0,0,0,.45);
+      color: #fff; border: none; width: 38px; height: 38px; border-radius: 50%; font-size: 20px; cursor: pointer; line-height: 1; }
+    .sl-nav:hover { background: rgba(0,0,0,.7); }
+    .sl-nav.prev { left: 8px; } .sl-nav.next { right: 8px; }
+    .sl-dots { text-align: center; margin-top: 10px; }
+    .sl-dots span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #cdd8d1; margin: 0 3px; cursor: pointer; }
+    .sl-dots span.on { background: var(--green2); }
+    #noFoto { text-align: center; color: #999; padding: 28px; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -102,15 +119,29 @@
     </div>
 
     <div class="card">
-      <h3>Rekap Status per Prodi / Jurusan</h3>
+      <h3>Rekap Status per Program Studi</h3>
       <div class="body">
         <div id="loading">Memuat data dashboard…</div>
         <table id="tbl" hidden>
           <thead>
-            <tr><th>Prodi / Jurusan</th><th>Status Laporan</th><th>Waktu Kirim</th><th>Ket.</th></tr>
+            <tr><th>Program Studi</th><th>Status Laporan</th><th>Waktu Kirim</th><th>Ket.</th></tr>
           </thead>
           <tbody id="tblBody"></tbody>
         </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📸 Dokumentasi Foto Jumat Bersih</h3>
+      <div class="body" style="padding:18px;">
+        <div id="slideshow" class="slideshow" hidden>
+          <div class="slide-frame" id="slideFrame"></div>
+          <div class="sl-cap" id="slideCap"></div>
+          <button class="sl-nav prev" onclick="slideMove(-1)">‹</button>
+          <button class="sl-nav next" onclick="slideMove(1)">›</button>
+          <div class="sl-dots" id="slideDots"></div>
+        </div>
+        <div id="noFoto" hidden>Belum ada dokumentasi foto untuk tanggal ini.</div>
       </div>
     </div>
 
@@ -211,6 +242,63 @@
       return PRODI.map(p => ({ prodi: p, ...(map[p] || {status:'BELUM'}) }));
     }
 
+    // ── Slideshow dokumentasi foto ──
+    let slides = [], slideIdx = 0, slideTimer = null;
+    function renderSlides(fotos) {
+      slides = fotos || [];
+      const frame = document.getElementById('slideFrame');
+      const dots = document.getElementById('slideDots');
+      frame.innerHTML = ''; dots.innerHTML = '';
+      clearInterval(slideTimer);
+      if (!slides.length) {
+        document.getElementById('slideshow').hidden = true;
+        document.getElementById('noFoto').hidden = false;
+        return;
+      }
+      document.getElementById('noFoto').hidden = true;
+      document.getElementById('slideshow').hidden = false;
+      slides.forEach((s, i) => {
+        const img = document.createElement('img');
+        img.src = s.url; img.alt = s.label + ' — ' + s.prodi;
+        img.loading = 'lazy';
+        if (i === 0) img.className = 'active';
+        frame.appendChild(img);
+        const d = document.createElement('span');
+        if (i === 0) d.className = 'on';
+        d.onclick = () => slideGo(i);
+        dots.appendChild(d);
+      });
+      slideIdx = 0; updateCap();
+      slideTimer = setInterval(() => slideMove(1), 3800);
+    }
+    function updateCap() {
+      const s = slides[slideIdx];
+      document.getElementById('slideCap').innerHTML = s ? `<b>${s.label}</b> — ${s.prodi}` : '';
+    }
+    function slideGo(i) {
+      const imgs = document.querySelectorAll('#slideFrame img');
+      const dots = document.querySelectorAll('#slideDots span');
+      if (!imgs.length) return;
+      slideIdx = (i + imgs.length) % imgs.length;
+      imgs.forEach((im, k) => im.classList.toggle('active', k === slideIdx));
+      dots.forEach((dt, k) => dt.classList.toggle('on', k === slideIdx));
+      updateCap();
+    }
+    function slideMove(dir) { slideGo(slideIdx + dir); }
+
+    function demoFotos() {
+      const svg = (label, prodi, c1, c2) => 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='400'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${c1}'/><stop offset='1' stop-color='${c2}'/></linearGradient></defs><rect width='640' height='400' fill='url(#g)'/><text x='320' y='185' font-family='Arial' font-size='34' fill='white' text-anchor='middle' font-weight='bold'>${label}</text><text x='320' y='230' font-family='Arial' font-size='20' fill='white' text-anchor='middle' opacity='.9'>${prodi}</text><text x='320' y='360' font-family='Arial' font-size='13' fill='white' text-anchor='middle' opacity='.7'>contoh dokumentasi</text></svg>`);
+      return [
+        { prodi: 'Keperawatan', label: 'Sebelum', url: svg('SEBELUM', 'Keperawatan', '#a1887f', '#5d4037') },
+        { prodi: 'Keperawatan', label: 'Sesudah', url: svg('SESUDAH', 'Keperawatan', '#66bb6a', '#1b5e20') },
+        { prodi: 'Kebidanan', label: 'Sebelum', url: svg('SEBELUM', 'Kebidanan', '#a1887f', '#5d4037') },
+        { prodi: 'Kebidanan', label: 'Sesudah', url: svg('SESUDAH', 'Kebidanan', '#66bb6a', '#1b5e20') },
+        { prodi: 'Gizi', label: 'Sesudah', url: svg('SESUDAH', 'Gizi', '#66bb6a', '#1b5e20') },
+        { prodi: 'Farmasi', label: 'Sesudah', url: svg('SESUDAH', 'Farmasi', '#66bb6a', '#1b5e20') },
+      ];
+    }
+
     async function loadDashboard() {
       document.getElementById('loading').hidden = false;
       document.getElementById('tbl').hidden = true;
@@ -218,6 +306,7 @@
 
       if (GAS_URL.startsWith('__')) {
         render(demoData(), 17);  // demo (template)
+        renderSlides(demoFotos());
         return;
       }
       try {
@@ -230,9 +319,11 @@
         const master = (out.prodiList && out.prodiList.length) ? out.prodiList : PRODI;
         const rows = master.map(p => byProdi[p] || { prodi: p, status: 'BELUM' });
         render(rows, out.totalPeserta || 0);
+        renderSlides(out.fotos || []);
       } catch (err) {
         document.getElementById('loading').textContent = 'Gagal memuat: ' + err.message + ' (menampilkan data contoh).';
         render(demoData(), 17);
+        renderSlides(demoFotos());
       }
     }
     loadDashboard();
