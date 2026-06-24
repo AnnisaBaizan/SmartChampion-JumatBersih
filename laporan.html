@@ -326,10 +326,10 @@
             <input type="file" id="inpSesudah" accept="image/*" multiple hidden>
           </div>
           <div class="field">
-            <label class="lbl">Video Dokumentasi
-              <small style="color:#999;font-weight:400;"> — opsional, 1 video, maks 25 MB</small></label>
-            <div id="videoBox"></div>
-            <input type="file" id="inpVideo" accept="video/*" hidden>
+            <label class="lbl">Video Dokumentasi (Link)
+              <small style="color:#999;font-weight:400;"> — opsional, tempel link Google Drive / YouTube</small></label>
+            <input type="url" id="videoLink" name="videoLink" placeholder="https://drive.google.com/...   atau   https://youtu.be/...">
+            <div class="help">Unggah video ke Google Drive / YouTube, lalu tempel tautannya di sini (hemat penyimpanan institusi).</div>
           </div>
         </div>
       </div>
@@ -469,20 +469,21 @@
     })();
 
     // ── Dokumentasi: foto sebelum/sesudah (3–5) + video (maks 1) ──
-    const MIN_FOTO = 3, MAX_FOTO = 5, MAX_VIDEO_MB = 25;
-    const docs = { sebelum: [], sesudah: [], video: '' };
+    const MIN_FOTO = 3, MAX_FOTO = 5;
+    const docs = { sebelum: [], sesudah: [] };
 
+    // Kompres foto otomatis: maks 1280px, JPEG 0.8 — tajam di layar & PDF, ±300 KB. User tak perlu kompres manual.
     function compressImage(file) {
       return new Promise(resolve => {
         const reader = new FileReader();
         reader.onload = e => {
           const img = new Image();
           img.onload = () => {
-            const max = 1000; let w = img.width, h = img.height;
+            const max = 1280; let w = img.width, h = img.height;
             if (w > max || h > max) { if (w > h) { h = h * max / w; w = max; } else { w = w * max / h; h = max; } }
             const c = document.createElement('canvas'); c.width = w; c.height = h;
             c.getContext('2d').drawImage(img, 0, 0, w, h);
-            resolve(c.toDataURL('image/jpeg', 0.7));
+            resolve(c.toDataURL('image/jpeg', 0.8));
           };
           img.src = e.target.result;
         };
@@ -522,27 +523,6 @@
     }
     bindMulti('sebelum', 'inpSebelum'); bindMulti('sesudah', 'inpSesudah');
     renderMulti('sebelum'); renderMulti('sesudah');
-
-    // ── Video (1) ──
-    function renderVideo(name) {
-      const box = document.getElementById('videoBox');
-      if (docs.video) {
-        box.innerHTML = `<video src="${docs.video}" controls style="width:100%;max-height:240px;border-radius:8px;background:#000;"></video>
-          <div class="sigbar"><small>${name || 'Video terpilih'}</small><button type="button" onclick="removeVideo()">Hapus video</button></div>`;
-      } else {
-        box.innerHTML = `<div class="uploader" onclick="document.getElementById('inpVideo').click()">
-          <div class="ic">🎬</div><div class="t">Unggah Video</div><div class="s">1 video, maks ${MAX_VIDEO_MB} MB</div></div>`;
-      }
-    }
-    function removeVideo() { docs.video = ''; document.getElementById('inpVideo').value = ''; renderVideo(); }
-    document.getElementById('inpVideo').addEventListener('change', function () {
-      const f = this.files[0]; if (!f) return;
-      if (f.size > MAX_VIDEO_MB * 1024 * 1024) { toast('Video terlalu besar (maks ' + MAX_VIDEO_MB + ' MB).', 'err'); this.value = ''; return; }
-      const r = new FileReader();
-      r.onload = e => { docs.video = e.target.result; renderVideo(f.name); };
-      r.readAsDataURL(f);
-    });
-    renderVideo();
 
     function toast(msg, type) {
       const s = document.getElementById('status');
@@ -638,7 +618,8 @@
         kendala: f.kendala.value.trim(), catatan: f.catatan.value.trim(),
         namaKajur: f.namaKajur.value.trim(), nipKajur: f.nipKajur.value.trim(),
         namaKaprodi: f.namaKaprodi.value.trim(), nipKaprodi: f.nipKaprodi.value.trim(),
-        fotoSebelum: docs.sebelum, fotoSesudah: docs.sesudah, video: docs.video,
+        fotoSebelum: docs.sebelum, fotoSesudah: docs.sesudah,
+        video: f.videoLink ? f.videoLink.value.trim() : '',
         ttdKajur: sig.kajur.data || '', ttdKaprodi: sig.kaprodi.data || '',
       };
     }
@@ -647,7 +628,7 @@
       const akt = (d.aktivitas && d.aktivitas.length) ? d.aktivitas.map(a => `<li>${esc(a)}</li>`).join('') : '<li><i>—</i></li>';
       const fotoList = (arr, label) => (arr && arr.length) ? arr.map((s, i) => `<div class="rv-foto"><img src="${s}"><div>${label} ${i + 1}</div></div>`).join('') : '';
       const fotosHtml = (fotoList(d.fotoSebelum, 'Sebelum') + fotoList(d.fotoSesudah, 'Sesudah')) || '<i>Tidak ada foto</i>';
-      const videoNote = d.video ? '<div style="font-size:11px;margin-top:6px;color:#555;">🎬 Video dokumentasi terlampir di sistem.</div>' : '';
+      const videoNote = d.video ? `<div style="font-size:11px;margin-top:6px;color:#555;">🎬 Video dokumentasi: <a href="${esc(d.video)}">${esc(d.video)}</a></div>` : '';
       const tglStr = d.tanggal ? new Date(d.tanggal + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
       const ttdImg = s => s ? `<img src="${s}" style="height:55px;display:block;margin:2px auto;">` : '<div class="space"></div>';
       document.getElementById('reportDoc').innerHTML = `
@@ -708,8 +689,8 @@
     }
     function saveLast(d) {
       currentReport = d;
-      try { localStorage.setItem(LS_KEY, JSON.stringify({ ...d, video: '' })); }  // video tidak disimpan di localStorage
-      catch (e) { try { localStorage.setItem(LS_KEY, JSON.stringify({ ...d, fotoSebelum: [], fotoSesudah: [], video: '' })); } catch (_) {} }
+      try { localStorage.setItem(LS_KEY, JSON.stringify(d)); }  // video kini hanya link (kecil)
+      catch (e) { try { localStorage.setItem(LS_KEY, JSON.stringify({ ...d, fotoSebelum: [], fotoSesudah: [] })); } catch (_) {} }
       showReDownload(d);
     }
     function reDownload() {

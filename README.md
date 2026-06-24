@@ -18,7 +18,7 @@ hanya memakai Node bawaan.
 
 - **2 halaman:** Dashboard (`/`) dan Form Laporan (`/laporan.html`).
 - **Form Bagian A–F** sesuai template resmi (identitas, kehadiran, aktivitas, evaluasi, dokumentasi, TTD).
-- **Dokumentasi:** Foto **Sebelum 3–5**, Foto **Sesudah 3–5**, dan **1 video** (maks 25 MB). Foto dikompres otomatis di sisi klien.
+- **Dokumentasi:** Foto **Sebelum 3–5**, Foto **Sesudah 3–5** (dikompres otomatis di sisi klien), dan **video via link** (Google Drive / YouTube — hemat penyimpanan).
 - **Tanda tangan digital** (gambar di kanvas). TTD **disimpan ke Google Drive** dan bisa **dipakai ulang** lewat dropdown per prodi. Ada peringatan + checkbox konfirmasi agar TTD tidak asal/sembarangan.
 - **Output PDF** ber-**KOP resmi**, bisa diunduh setelah kirim dan **diunduh ulang** kapan saja.
 - **Dashboard SMART Champion:** statistik kepatuhan, rekap status per prodi, **slideshow dokumentasi foto**, jadwal & contoh notifikasi, dan alur sistem.
@@ -101,7 +101,8 @@ hanya memakai Node bawaan.
 
 ## Catatan teknis
 - **Tanpa npm:** `build.js` & `Code.gs` tidak punya dependency. `vercel.json` memakai `installCommand: ""`.
-- **Foto** dikompres ke maks 1000px / JPEG 0.7 sebelum dikirim. **Video** maks 25 MB (batas aman payload Apps Script).
+- **Foto** dikompres otomatis di browser ke maks **1280px / JPEG 0.8** (±300 KB) — tajam di layar & PDF, user tidak perlu kompres manual.
+- **Video tidak di-upload** (browser tidak bisa kompres video tanpa library berat) — disimpan sebagai **link** Drive/YouTube agar kuota Drive institusi (100 GB) awet. Estimasi storage tanpa video ≈ 1 GB/tahun (puluhan tahun).
 - POST ke GAS memakai `Content-Type: text/plain` untuk menghindari CORS preflight.
 
 ---
@@ -117,7 +118,7 @@ hanya memakai Node bawaan.
 6. **E. Dokumentasi:**
    - **Foto Sebelum:** unggah **3–5 foto** (klik **＋ Tambah**; hapus dengan **✕**). Indikator berubah hijau ✓ bila ≥ 3.
    - **Foto Sesudah:** sama, **3–5 foto**.
-   - **Video:** opsional, **1 video** maks 25 MB.
+   - **Video (Link):** opsional — unggah video ke Google Drive/YouTube lalu **tempel tautannya**.
 7. **F. Pernyataan & Tanda Tangan:**
    - **Gambar tanda tangan** di kotak (pakai mouse/sentuh) untuk Ketua Jurusan & Ka. Prodi.
    - Jika sudah pernah membuat TTD, pilih dari **dropdown** "🖊️ …" — TTD tersimpan otomatis muncul per prodi.
@@ -150,7 +151,7 @@ Prodi yang belum melapor akan menerima Email + WhatsApp:
 ## ❓ Troubleshooting singkat
 - **Form bilang "Mode demo"** → `GAS_URL` belum diset di Vercel. Set env lalu redeploy.
 - **TTD lama tidak muncul di dropdown** → pastikan backend aktif & prodi sudah dipilih (dropdown dimuat saat memilih prodi).
-- **Video gagal** → ukuran > 25 MB; perkecil durasi/resolusi.
+- **Video** → tidak di-upload; unggah ke Drive/YouTube lalu tempel linknya di field Video.
 - **Dashboard kosong** → pilih tanggal Jumat yang ada datanya (data dummy template: `2026-06-19`).
 
 ---

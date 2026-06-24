@@ -146,7 +146,8 @@ function handleSubmitLaporan(d) {
     const folder = _getFolder(d.prodi, d.tanggal);
     const urlSebelum = _savePhotos(folder, d.fotoSebelum, `${d.prodi}_${d.tanggal}_SEBELUM`);
     const urlSesudah = _savePhotos(folder, d.fotoSesudah, `${d.prodi}_${d.tanggal}_SESUDAH`);
-    const urlVideo   = _saveMedia(folder, d.video, `${d.prodi}_${d.tanggal}_VIDEO`);
+    // Video disimpan sebagai LINK (Drive/YouTube) — hemat penyimpanan, tidak di-upload ulang
+    const urlVideo = (d.video && /^https?:\/\//.test(String(d.video))) ? String(d.video).trim() : '-';
 
     // Simpan TTD ke Drive (folder TTD) agar bisa dipakai ulang lewat dropdown
     const ttdKajurUrl   = _saveTtd(d.prodi, d.namaKajur,   d.ttdKajur);
