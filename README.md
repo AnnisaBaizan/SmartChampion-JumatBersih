@@ -45,7 +45,10 @@ Form mengikuti template asli:
    - `SPREADSHEET_ID`, `DRIVE_FOLDER_ID`
    - `EMAIL_ADMIN` (penerima rekap)
    - `WA_TOKEN` + `WA_AKTIF: true` jika memakai WhatsApp ([fonnte.com](https://fonnte.com) — token gratis)
-5. Lengkapi `PRODI_MASTER` dengan **nomor WA (format `62…`)** dan **email** tiap Kaprodi/Kajur.
+5. **Master prodi & kontak di-load dari Spreadsheet**, bukan dari `Code.gs`. Buka tab
+   `Prodi-Master` lalu isi **No. WA (format `62…`)** & **email** tiap Kaprodi/Kajur.
+   Tab ini juga jadi sumber daftar prodi untuk dropdown form & baris dashboard
+   (lewat action `getProdi` / `getDashboard`). Tab dibuat otomatis bila belum ada.
 6. **Deploy → New deployment → Web app**
    - *Execute as:* **Me**
    - *Who has access:* **Anyone**
@@ -91,7 +94,8 @@ Setelah laporan dikirim, tombol **Unduh PDF Laporan** memakai dialog cetak brows
 
 ## 🛠️ Kontrak API (GAS)
 
-- `GET  ?action=getDashboard&tanggal=YYYY-MM-DD` → `{ rows:[{prodi,status,waktu,ket}], totalPeserta }`
+- `GET  ?action=getProdi` → `{ prodiList:[…] }` (daftar prodi dari tab `Prodi-Master`)
+- `GET  ?action=getDashboard&tanggal=YYYY-MM-DD` → `{ rows:[{prodi,status,waktu,ket}], totalPeserta, prodiList }`
 - `POST { action:'submitLaporan', … }` → `{ status:'success', nomor, waktu }`
 
 ---

@@ -8,10 +8,11 @@
 const CONFIG = {
   SPREADSHEET_ID: 'GANTI_DENGAN_SPREADSHEET_ID',   // ID Google Sheets arsip laporan
   SHEET_NAME: 'Laporan-JumatBersih',               // Tab arsip laporan
+  PRODI_SHEET_NAME: 'Prodi-Master',                // Tab master prodi + kontak notifikasi
   DRIVE_FOLDER_ID: 'GANTI_DENGAN_FOLDER_ID',        // Folder Drive untuk foto dokumentasi
   NAMA_INSTANSI: 'Politeknik Kesehatan Kemenkes Palembang',
   NOMOR_PREFIX: 'JB/SMART-CHAMPION',                // Prefix nomor laporan
-  FORM_URL: 'https://poltekkes-palembang.ac.id/smart-champion/laporan',
+  FORM_URL: 'https://smartchampion-jumatbersih.vercel.app/laporan.html',
 
   // --- Email notifikasi (MailApp bawaan Google) ---
   EMAIL_AKTIF: true,
@@ -22,20 +23,14 @@ const CONFIG = {
   WA_TOKEN: 'GANTI_DENGAN_TOKEN_FONNTE',
 };
 
-// ── Master Prodi + kontak Ketua Jurusan/Kaprodi (untuk notifikasi) ──
-// Lengkapi nomor WA (format 62...) & email tiap prodi.
-const PRODI_MASTER = [
-  { prodi: 'Keperawatan',            wa: '628xxxxxxxxxx', email: 'kaprodi.kep@poltekkespalembang.ac.id' },
-  { prodi: 'Kebidanan',              wa: '628xxxxxxxxxx', email: 'kaprodi.bid@poltekkespalembang.ac.id' },
-  { prodi: 'Keperawatan Gigi',       wa: '628xxxxxxxxxx', email: 'kaprodi.kepgigi@poltekkespalembang.ac.id' },
-  { prodi: 'Gizi',                   wa: '628xxxxxxxxxx', email: 'kaprodi.gizi@poltekkespalembang.ac.id' },
-  { prodi: 'Sanitasi Lingkungan',    wa: '628xxxxxxxxxx', email: 'kaprodi.sanling@poltekkespalembang.ac.id' },
-  { prodi: 'Analis Kesehatan / TLM', wa: '628xxxxxxxxxx', email: 'kaprodi.tlm@poltekkespalembang.ac.id' },
-  { prodi: 'Farmasi',                wa: '628xxxxxxxxxx', email: 'kaprodi.farmasi@poltekkespalembang.ac.id' },
-  { prodi: 'Rekam Medis',            wa: '628xxxxxxxxxx', email: 'kaprodi.rmik@poltekkespalembang.ac.id' },
-  { prodi: 'Fisioterapi',            wa: '628xxxxxxxxxx', email: 'kaprodi.fisio@poltekkespalembang.ac.id' },
-  { prodi: 'Teknik Elektromedik',    wa: '628xxxxxxxxxx', email: 'kaprodi.tem@poltekkespalembang.ac.id' },
+// ── Daftar prodi default ──
+// Kontak (No. WA & email) DI-LOAD dari tab "Prodi-Master" di Spreadsheet (lihat _getProdiMaster).
+// Daftar ini hanya dipakai untuk auto-membuat tab "Prodi-Master" saat pertama kali kosong.
+const PRODI_DEFAULT = [
+  'Keperawatan', 'Kebidanan', 'Keperawatan Gigi', 'Gizi', 'Sanitasi Lingkungan',
+  'Analis Kesehatan / TLM', 'Farmasi', 'Rekam Medis', 'Fisioterapi', 'Teknik Elektromedik',
 ];
+const PRODI_HEADERS = ['Prodi / Jurusan', 'No. WA (62...)', 'Email Kaprodi/Kajur'];
 
 // Urutan kolom sheet arsip (header otomatis dibuat saat sheet kosong)
 const HEADERS = [
@@ -54,6 +49,8 @@ function doGet(e) {
   let result;
   if (action === 'getDashboard') {
     result = getDashboard(e.parameter.tanggal || '');
+  } else if (action === 'getProdi') {
+    result = { prodiList: _getProdiMaster().map(p => p.prodi) };
   } else {
     result = { error: 'Action tidak dikenal.' };
   }
@@ -94,6 +91,30 @@ function _sheet() {
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+// ── Master prodi + kontak — DI-LOAD dari tab "Prodi-Master" ──
+// Kolom: Prodi / Jurusan | No. WA (62...) | Email Kaprodi/Kajur
+// Tab dibuat otomatis berisi PRODI_DEFAULT bila belum ada (kontak dikosongkan untuk diisi user).
+function _getProdiMaster() {
+  const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(CONFIG.PRODI_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.PRODI_SHEET_NAME);
+    sheet.appendRow(PRODI_HEADERS);
+    sheet.getRange(1, 1, 1, PRODI_HEADERS.length).setFontWeight('bold');
+    PRODI_DEFAULT.forEach(p => sheet.appendRow([p, '', '']));
+    sheet.setFrozenRows(1);
+  }
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  return sheet.getRange(2, 1, lastRow - 1, 3).getValues()
+    .filter(r => String(r[0]).trim())
+    .map(r => ({
+      prodi: String(r[0]).trim(),
+      wa:    String(r[1] || '').trim(),
+      email: String(r[2] || '').trim(),
+    }));
 }
 
 // ============================================================
@@ -192,7 +213,8 @@ function getDashboard(tanggal) {
       });
     }
     Object.keys(seen).forEach(p => rows.push(seen[p]));
-    return { rows: rows, totalPeserta: totalPeserta, tanggal: tanggal };
+    const prodiList = _getProdiMaster().map(p => p.prodi);
+    return { rows: rows, totalPeserta: totalPeserta, tanggal: tanggal, prodiList: prodiList };
   } catch (err) {
     return { error: err.message };
   }
@@ -217,7 +239,7 @@ function _prodiBelumLapor(tanggal) {
       if (_normTgl(r[0]) === tanggal) reported[r[2]] = true;
     });
   }
-  return PRODI_MASTER.filter(p => !reported[p.prodi]);
+  return _getProdiMaster().filter(p => !reported[p.prodi]);
 }
 
 // ============================================================
@@ -306,7 +328,7 @@ Batas pengumpulan: *Jumat pukul 15.00 WIB*.
 Akses form: ${CONFIG.FORM_URL}
 ━━━━━━━━━━━━━━━━━━━━
 _${CONFIG.NAMA_INSTANSI}_`;
-    if (CONFIG.WA_AKTIF && p.wa && p.wa.indexOf('x') === -1) _kirimWA(p.wa, isi);
+    if (CONFIG.WA_AKTIF && p.wa && p.wa.replace(/\D/g, '').length >= 8) _kirimWA(p.wa, isi);
     if (CONFIG.EMAIL_AKTIF && p.email && p.email.indexOf('@') > -1) {
       try {
         MailApp.sendEmail({
@@ -331,9 +353,10 @@ function notifKeterlambatan(){ _kirimPengingat(_tanggalJumatIni(), { judul: 'NOT
 // Dipanggil oleh trigger Senin 07.00 — rekap mingguan ke admin
 function rekapMingguan() {
   const tanggal = _tanggalJumatIni();
+  const total = _getProdiMaster().length || 1;
   const belum = _prodiBelumLapor(tanggal);
-  const sudah = PRODI_MASTER.length - belum.length;
-  const patuh = Math.round(sudah / PRODI_MASTER.length * 100);
+  const sudah = total - belum.length;
+  const patuh = Math.round(sudah / total * 100);
   const list = belum.length ? belum.map(p => '• ' + p.prodi).join('<br>') : '<i>Semua prodi sudah lapor 🎉</i>';
   const html =
     `<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.7">

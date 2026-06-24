@@ -149,16 +149,6 @@
             <label class="lbl">Jurusan / Program Studi <span class="req">*</span></label>
             <select name="prodi" id="prodi" required>
               <option value="">— Pilih Prodi —</option>
-              <option>Keperawatan</option>
-              <option>Kebidanan</option>
-              <option>Keperawatan Gigi</option>
-              <option>Gizi</option>
-              <option>Sanitasi Lingkungan</option>
-              <option>Analis Kesehatan / TLM</option>
-              <option>Farmasi</option>
-              <option>Rekam Medis</option>
-              <option>Fisioterapi</option>
-              <option>Teknik Elektromedik</option>
             </select>
           </div>
           <div class="field">
@@ -342,6 +332,27 @@
       'Perawatan tanaman / penghijauan lingkungan',
       'Gotong royong halaman / area parkir',
     ];
+    // Daftar prodi default (fallback bila backend belum dikonfigurasi / demo mode)
+    const PRODI_FALLBACK = ['Keperawatan','Kebidanan','Keperawatan Gigi','Gizi','Sanitasi Lingkungan',
+      'Analis Kesehatan / TLM','Farmasi','Rekam Medis','Fisioterapi','Teknik Elektromedik'];
+
+    function isiProdi(list) {
+      const sel = document.getElementById('prodi');
+      sel.length = 1; // sisakan placeholder
+      list.forEach(p => { const o = document.createElement('option'); o.textContent = p; sel.appendChild(o); });
+    }
+    isiProdi(PRODI_FALLBACK);
+
+    // Muat daftar prodi dari Spreadsheet (tab Prodi-Master) bila GAS dikonfigurasi
+    (async function loadProdi() {
+      if (GAS_URL.startsWith('__')) return;  // demo mode → pakai fallback
+      try {
+        const res = await fetch(`${GAS_URL}?action=getProdi`);
+        const out = await res.json();
+        if (out.prodiList && out.prodiList.length) isiProdi(out.prodiList);
+      } catch (e) { /* tetap pakai fallback */ }
+    })();
+
     const grid = document.getElementById('aktivitasGrid');
     AKTIVITAS.forEach((a, i) => {
       const l = document.createElement('label');

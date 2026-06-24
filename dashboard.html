@@ -131,7 +131,7 @@
             <div>Yth. Ketua Jurusan/Kaprodi <b>[NAMA_PRODI]</b></div>
             <div style="margin:8px 0;">Laporan Jumat Bersih tanggal <b>[TANGGAL]</b> belum masuk ke sistem
               SMART Champion. Batas pengumpulan: <b>Jumat pukul 15.00 WIB</b>.</div>
-            <div>Akses form: <a href="laporan.html">https://poltekkes-palembang.ac.id/smart-champion/laporan</a></div>
+            <div>Akses form: <a href="laporan.html">https://smartchampion-jumatbersih.vercel.app/laporan.html</a></div>
           </div>
         </div>
       </div>
@@ -217,10 +217,11 @@
         const res = await fetch(`${GAS_URL}?action=getDashboard&tanggal=${encodeURIComponent(tgl)}`);
         const out = await res.json();
         if (out.error) throw new Error(out.error);
-        // Gabungkan daftar prodi master dengan data yang sudah lapor
+        // Gabungkan daftar prodi master (dari Spreadsheet) dengan data yang sudah lapor
         const byProdi = {};
         (out.rows || []).forEach(r => byProdi[r.prodi] = r);
-        const rows = PRODI.map(p => byProdi[p] || { prodi: p, status: 'BELUM' });
+        const master = (out.prodiList && out.prodiList.length) ? out.prodiList : PRODI;
+        const rows = master.map(p => byProdi[p] || { prodi: p, status: 'BELUM' });
         render(rows, out.totalPeserta || 0);
       } catch (err) {
         document.getElementById('loading').textContent = 'Gagal memuat: ' + err.message + ' (menampilkan data contoh).';
