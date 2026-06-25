@@ -330,15 +330,9 @@
               <ul class="combo-list" id="listPj"></ul>
             </div>
           </div>
-          <div class="row">
-            <div class="field">
-              <label class="lbl">NIP <span class="req">*</span></label>
-              <input type="text" name="jabatanNip" id="jabatanNip" placeholder="Contoh: 198501012010012001" required>
-            </div>
-            <div class="field">
-              <label class="lbl">No. HP / WA <span class="req">*</span></label>
-              <input type="tel" name="hp" placeholder="Contoh: 08123456789" required>
-            </div>
+          <div class="field">
+            <label class="lbl">NIP <span class="req">*</span></label>
+            <input type="text" name="jabatanNip" id="jabatanNip" placeholder="Contoh: 198501012010012001" required>
           </div>
         </div>
       </div>
@@ -895,7 +889,7 @@
       const aktivitas = [...f.querySelectorAll('input[name=aktivitas]:checked')].map(c => c.value);
       return {
         tanggal: f.tanggal.value, hari: f.hari.value, prodi: f.prodi.value,
-        namaPj: f.namaPj.value.trim(), jabatanNip: f.jabatanNip.value.trim(), hp: f.hp.value.trim(),
+        namaPj: f.namaPj.value.trim(), jabatanNip: f.jabatanNip.value.trim(), hp: '',
         dosen: Number(f.dosen.value) || 0, tendik: Number(f.tendik.value) || 0, mahasiswa: Number(f.mahasiswa.value) || 0,
         aktivitas, aktivitasLain: f.aktivitasLain.value.trim(),
         sebelum: f.sebelum.value, sesudah: f.sesudah.value,
@@ -933,7 +927,6 @@
            ${idRow('Jurusan / Prodi', esc(d.prodi))}
            ${idRow('Penanggung Jawab', esc(d.namaPj))}
            ${idRow('NIP', esc(d.jabatanNip))}
-           ${idRow('No. HP / WA', esc(d.hp))}
          </table>`,
 
         `<div class="rv-h">B. Data Kehadiran Peserta</div>
