@@ -48,10 +48,10 @@
     }
 
     .section { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.05);
-      margin-bottom: 18px; overflow: hidden; }
+      margin-bottom: 18px; overflow: visible; }   /* visible: dropdown tidak terpotong */
     .section > h3 {
       background: #eaf3ee; color: var(--green); font-size: 14px; padding: 12px 18px;
-      border-bottom: 1px solid var(--line); letter-spacing: .3px;
+      border-bottom: 1px solid var(--line); letter-spacing: .3px; border-radius: 12px 12px 0 0;
     }
     .section .body { padding: 18px; }
 
@@ -93,15 +93,15 @@
 
     /* ── Combobox kustom (dropdown lintas-browser) ── */
     .combo { position: relative; }
-    .combo-list { position: absolute; left: 0; right: 0; top: 100%; z-index: 40; background: #fff;
-      border: 1px solid var(--green2); border-top: none; border-radius: 0 0 8px 8px;
-      box-shadow: 0 10px 24px rgba(0,0,0,.14); max-height: 230px; overflow: auto;
-      list-style: none; margin: 0; padding: 4px 0; display: none; }
+    .combo-list { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 60; background: #fff;
+      border: 1px solid #cfd8d2; border-radius: 8px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.16); max-height: 240px; overflow: auto;
+      list-style: none; margin: 0; padding: 4px; display: none; }
     .combo-list.open { display: block; }
-    .combo-list li { padding: 9px 12px; font-size: 13px; cursor: pointer; }
+    .combo-list li { padding: 9px 11px; font-size: 13px; cursor: pointer; border-radius: 6px; }
     .combo-list li:hover, .combo-list li.hi { background: #eaf3ee; }
-    .combo-list li.new { color: var(--green2); font-style: italic; }
-    .combo-list .empty { padding: 9px 12px; font-size: 12px; color: #999; }
+    .combo-list li.new { color: var(--green2); font-weight: 700; border-top: 1px solid #eef2ef; margin-top: 2px; }
+    .combo-list .empty { padding: 10px 11px; font-size: 12px; color: #999; }
 
     /* ── Input link video ── */
     .linkbox { display: flex; align-items: stretch; border: 1px solid #cfd8d2; border-radius: 8px;
