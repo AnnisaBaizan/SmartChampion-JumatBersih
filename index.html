@@ -76,9 +76,15 @@
 
     /* ── Slideshow dokumentasi foto ── */
     .slideshow { position: relative; max-width: 720px; margin: 0 auto; }
-    .slide-frame { position: relative; overflow: hidden; border-radius: 10px; background: #0d1f15; aspect-ratio: 16/10; }
-    .slide-frame img { width: 100%; height: 100%; object-fit: contain; display: none; }
-    .slide-frame img.active { display: block; }
+    .slide-frame { position: relative; overflow: hidden; border-radius: 10px; background: #0d1f15; aspect-ratio: 22/9; }
+    .slide-pane { position: absolute; inset: 0; display: none; }
+    .slide-pane.active { display: flex; }
+    .slide-pane .half { position: relative; flex: 1; overflow: hidden; }
+    .slide-pane .half + .half { border-left: 2px solid #fff; }
+    .slide-pane img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .slide-pane .tag { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.6); color: #fff;
+      font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 4px; letter-spacing: .4px; }
+    .slide-pane .half.empty { background: #16261c; display: flex; align-items: center; justify-content: center; color: #6c7d72; font-size: 12px; }
     .sl-cap { position: absolute; left: 0; right: 0; bottom: 36px; color: #fff; font-size: 12.5px;
       background: linear-gradient(transparent, rgba(0,0,0,.75)); padding: 22px 14px 10px; pointer-events: none; }
     .sl-cap b { color: #aef5c8; }
@@ -406,8 +412,27 @@
 
     // ── Slideshow dokumentasi foto ──
     let slides = [], slideIdx = 0, slideTimer = null;
+    // Ubah daftar foto datar → pasangan Sebelum|Sesudah per unit (berdampingan)
+    function pairSlides(fotos) {
+      const byProdi = {};
+      (fotos || []).forEach(f => {
+        const g = byProdi[f.prodi] || (byProdi[f.prodi] = { sebelum: [], sesudah: [] });
+        (f.label === 'Sebelum' ? g.sebelum : g.sesudah).push(f.url);
+      });
+      const out = [];
+      Object.keys(byProdi).forEach(prodi => {
+        const g = byProdi[prodi], n = Math.max(g.sebelum.length, g.sesudah.length);
+        for (let i = 0; i < n; i++) out.push({
+          prodi,
+          before: g.sebelum[i] || g.sebelum[g.sebelum.length - 1] || '',
+          after:  g.sesudah[i] || g.sesudah[g.sesudah.length - 1] || '',
+          idx: i + 1, total: n,
+        });
+      });
+      return out;
+    }
     function renderSlides(fotos) {
-      slides = fotos || [];
+      slides = pairSlides(fotos);
       const frame = document.getElementById('slideFrame');
       const dots = document.getElementById('slideDots');
       frame.innerHTML = ''; dots.innerHTML = '';
@@ -419,30 +444,32 @@
       }
       document.getElementById('noFoto').hidden = true;
       document.getElementById('slideshow').hidden = false;
+      const half = (src, tag) => src
+        ? `<div class="half"><span class="tag">${tag}</span><img src="${src}" loading="lazy" alt="${tag}"></div>`
+        : `<div class="half empty">(tidak ada foto ${tag.toLowerCase()})</div>`;
       slides.forEach((s, i) => {
-        const img = document.createElement('img');
-        img.src = s.url; img.alt = s.label + ' — ' + s.prodi;
-        img.loading = 'lazy';
-        if (i === 0) img.className = 'active';
-        frame.appendChild(img);
+        const pane = document.createElement('div');
+        pane.className = 'slide-pane' + (i === 0 ? ' active' : '');
+        pane.innerHTML = half(s.before, 'SEBELUM') + half(s.after, 'SESUDAH');
+        frame.appendChild(pane);
         const d = document.createElement('span');
         if (i === 0) d.className = 'on';
         d.onclick = () => slideGo(i);
         dots.appendChild(d);
       });
       slideIdx = 0; updateCap();
-      slideTimer = setInterval(() => slideMove(1), 3800);
+      slideTimer = setInterval(() => slideMove(1), 4200);
     }
     function updateCap() {
       const s = slides[slideIdx];
-      document.getElementById('slideCap').innerHTML = s ? `<b>${s.label}</b> — ${s.prodi}` : '';
+      document.getElementById('slideCap').innerHTML = s ? `<b>${s.prodi}</b> — Sebelum &amp; Sesudah (${s.idx}/${s.total})` : '';
     }
     function slideGo(i) {
-      const imgs = document.querySelectorAll('#slideFrame img');
+      const panes = document.querySelectorAll('#slideFrame .slide-pane');
       const dots = document.querySelectorAll('#slideDots span');
-      if (!imgs.length) return;
-      slideIdx = (i + imgs.length) % imgs.length;
-      imgs.forEach((im, k) => im.classList.toggle('active', k === slideIdx));
+      if (!panes.length) return;
+      slideIdx = (i + panes.length) % panes.length;
+      panes.forEach((p, k) => p.classList.toggle('active', k === slideIdx));
       dots.forEach((dt, k) => dt.classList.toggle('on', k === slideIdx));
       updateCap();
     }
@@ -450,15 +477,15 @@
 
     function demoFotos() {
       const svg = (label, prodi, c1, c2) => 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='400'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${c1}'/><stop offset='1' stop-color='${c2}'/></linearGradient></defs><rect width='640' height='400' fill='url(#g)'/><text x='320' y='185' font-family='Arial' font-size='34' fill='white' text-anchor='middle' font-weight='bold'>${label}</text><text x='320' y='230' font-family='Arial' font-size='20' fill='white' text-anchor='middle' opacity='.9'>${prodi}</text><text x='320' y='360' font-family='Arial' font-size='13' fill='white' text-anchor='middle' opacity='.7'>contoh dokumentasi</text></svg>`);
-      return [
-        { prodi: 'Keperawatan', label: 'Sebelum', url: svg('SEBELUM', 'Keperawatan', '#a1887f', '#5d4037') },
-        { prodi: 'Keperawatan', label: 'Sesudah', url: svg('SESUDAH', 'Keperawatan', '#66bb6a', '#1b5e20') },
-        { prodi: 'Kebidanan', label: 'Sebelum', url: svg('SEBELUM', 'Kebidanan', '#a1887f', '#5d4037') },
-        { prodi: 'Kebidanan', label: 'Sesudah', url: svg('SESUDAH', 'Kebidanan', '#66bb6a', '#1b5e20') },
-        { prodi: 'Gizi', label: 'Sesudah', url: svg('SESUDAH', 'Gizi', '#66bb6a', '#1b5e20') },
-        { prodi: 'Farmasi', label: 'Sesudah', url: svg('SESUDAH', 'Farmasi', '#66bb6a', '#1b5e20') },
-      ];
+        `<svg xmlns='http://www.w3.org/2000/svg' width='560' height='460'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${c1}'/><stop offset='1' stop-color='${c2}'/></linearGradient></defs><rect width='560' height='460' fill='url(#g)'/><text x='280' y='220' font-family='Arial' font-size='34' fill='white' text-anchor='middle' font-weight='bold'>${label}</text><text x='280' y='262' font-family='Arial' font-size='18' fill='white' text-anchor='middle' opacity='.9'>${prodi}</text><text x='280' y='420' font-family='Arial' font-size='12' fill='white' text-anchor='middle' opacity='.7'>contoh dokumentasi</text></svg>`);
+      const out = [];
+      [['Keperawatan'], ['Kebidanan'], ['Gizi'], ['Farmasi']].forEach(([p]) => {
+        for (let i = 1; i <= 2; i++) {
+          out.push({ prodi: p, label: 'Sebelum', url: svg('SEBELUM ' + i, p, '#a1887f', '#5d4037') });
+          out.push({ prodi: p, label: 'Sesudah', url: svg('SESUDAH ' + i, p, '#66bb6a', '#1b5e20') });
+        }
+      });
+      return out;
     }
 
     async function loadDashboard() {
