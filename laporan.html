@@ -91,6 +91,18 @@
     .uploader img { max-width: 100%; border-radius: 6px; margin-top: 8px; max-height: 150px; }
     .uploader input { display: none; }
 
+    /* ── Combobox kustom (dropdown lintas-browser) ── */
+    .combo { position: relative; }
+    .combo-list { position: absolute; left: 0; right: 0; top: 100%; z-index: 40; background: #fff;
+      border: 1px solid var(--green2); border-top: none; border-radius: 0 0 8px 8px;
+      box-shadow: 0 10px 24px rgba(0,0,0,.14); max-height: 230px; overflow: auto;
+      list-style: none; margin: 0; padding: 4px 0; display: none; }
+    .combo-list.open { display: block; }
+    .combo-list li { padding: 9px 12px; font-size: 13px; cursor: pointer; }
+    .combo-list li:hover, .combo-list li.hi { background: #eaf3ee; }
+    .combo-list li.new { color: var(--green2); font-style: italic; }
+    .combo-list .empty { padding: 9px 12px; font-size: 12px; color: #999; }
+
     /* ── Input link video ── */
     .linkbox { display: flex; align-items: stretch; border: 1px solid #cfd8d2; border-radius: 8px;
       background: #fbfdfc; overflow: hidden; }
@@ -313,7 +325,10 @@
           </div>
           <div class="field">
             <label class="lbl">Nama Penanggung Jawab <span class="req">*</span></label>
-            <input type="text" name="namaPj" id="namaPj" list="dlPJ" placeholder="Pilih dari daftar atau ketik nama baru" required>
+            <div class="combo">
+              <input type="text" name="namaPj" id="namaPj" autocomplete="off" placeholder="Pilih dari daftar atau ketik nama baru" required>
+              <ul class="combo-list" id="listPj"></ul>
+            </div>
           </div>
           <div class="row">
             <div class="field">
@@ -451,7 +466,10 @@
             </div>
             <div class="field">
               <label class="lbl">Penanggung Jawab / Pelapor <small style="color:#999;font-weight:400;">(pilih atau ketik baru)</small></label>
-              <input type="text" name="namaKaprodi" id="namaKaprodi" list="dlPJ" placeholder="Pilih PJ unit ini / ketik nama baru" style="margin-bottom:8px;">
+              <div class="combo" style="margin-bottom:8px;">
+                <input type="text" name="namaKaprodi" id="namaKaprodi" autocomplete="off" placeholder="Pilih PJ unit ini / ketik nama baru">
+                <ul class="combo-list" id="listKaprodi"></ul>
+              </div>
               <input type="text" name="nipKaprodi" id="nipKaprodi" placeholder="NIP">
               <div class="sigwrap">
                 <div class="sig-preview" id="prevKaprodi"><span class="sig-empty">Belum ada tanda tangan</span></div>
@@ -462,8 +480,6 @@
               </div>
             </div>
           </div>
-          <datalist id="dlKajur"></datalist>
-          <datalist id="dlPJ"></datalist>
           <div class="ttd-warn">
             ⚠️
             <div>
@@ -610,15 +626,7 @@
 
     function refreshUnitDependent() {
       const unit = document.getElementById('prodi').value;
-      // Mengetahui: nama Ketua Jurusan untuk unit terpilih
       const kajurs = MENGETAHUI.filter(m => m.unit === unit && m.nama);
-      const dlK = document.getElementById('dlKajur'); dlK.innerHTML = '';
-      kajurs.forEach(m => { const o = document.createElement('option'); o.value = m.nama; dlK.appendChild(o); });
-      // Penanggung Jawab: nama untuk unit terpilih
-      const dlP = document.getElementById('dlPJ'); dlP.innerHTML = '';
-      PJ_LIST.filter(p => (!unit || p.unit === unit) && p.nama).forEach(p => {
-        const o = document.createElement('option'); o.value = p.nama; dlP.appendChild(o);
-      });
       // AUTO-ISI "Mengetahui" begitu unit dipilih (1 Ketua Jurusan per unit). TTD lama TIDAK dihapus.
       const kEl = document.getElementById('namaKajur');
       if (unit && kajurs.length) {
@@ -674,6 +682,36 @@
       refreshPreview();
     }
     document.getElementById('namaKaprodi').addEventListener('change', function () { applyPJ(this.value); });
+
+    // Dropdown kustom PJ (jalan di semua browser) — filter per unit + boleh ketik nama baru
+    function setupCombo(inputId, listId) {
+      const inp = document.getElementById(inputId), list = document.getElementById(listId);
+      function opts() {
+        const unit = document.getElementById('prodi').value;
+        return PJ_LIST.filter(p => (!unit || p.unit === unit) && p.nama);
+      }
+      function render() {
+        const q = inp.value.trim().toLowerCase();
+        const found = opts().filter(p => p.nama.toLowerCase().includes(q));
+        let html = found.slice(0, 60).map(p =>
+          `<li data-v="${p.nama.replace(/"/g, '&quot;')}">${p.nama}${p.nip ? ` <span style="color:#aaa">· ${p.nip}</span>` : ''}</li>`).join('');
+        if (inp.value.trim() && !found.some(p => p.nama.toLowerCase() === q))
+          html += `<li class="new" data-v="${inp.value.trim().replace(/"/g, '&quot;')}">➕ Pakai "${inp.value.trim()}" (baru)</li>`;
+        if (!html) html = '<div class="empty">Ketik nama penanggung jawab…</div>';
+        list.innerHTML = html;
+      }
+      inp.addEventListener('focus', () => { render(); list.classList.add('open'); });
+      inp.addEventListener('input', () => { render(); list.classList.add('open'); });
+      inp.addEventListener('blur', () => setTimeout(() => list.classList.remove('open'), 150));
+      list.addEventListener('mousedown', e => {
+        const li = e.target.closest('li[data-v]'); if (!li) return;
+        e.preventDefault();
+        applyPJ(li.getAttribute('data-v'));
+        list.classList.remove('open');
+      });
+    }
+    setupCombo('namaPj', 'listPj');
+    setupCombo('namaKaprodi', 'listKaprodi');
 
     // Default tanggal = Jumat terdekat (hari ini jika Jumat)
     // Format tanggal LOKAL (hindari pergeseran hari akibat toISOString/UTC)
