@@ -147,6 +147,22 @@
     #done .box p { font-size: 13px; color: #555; line-height: 1.6; margin-bottom: 18px; }
     #done .box .actions { flex-direction: column; }
 
+    /* ── Overlay proses kirim (langkah-langkah) ── */
+    #kirimOverlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none;
+      align-items: center; justify-content: center; z-index: 400; padding: 20px; }
+    #kirimOverlay.show { display: flex; }
+    .kirim-box { background: #fff; border-radius: 14px; max-width: 420px; width: 100%; padding: 26px 26px 22px; }
+    .kirim-box h3 { color: var(--green); font-size: 17px; margin-bottom: 4px; }
+    .kirim-box p { font-size: 12px; color: #888; margin-bottom: 16px; }
+    .kstep { display: flex; align-items: center; gap: 11px; padding: 7px 0; font-size: 13.5px; color: #999; }
+    .kstep .kic { width: 22px; height: 22px; border-radius: 50%; flex: 0 0 22px; display: flex;
+      align-items: center; justify-content: center; font-size: 12px; border: 2px solid #e0e6e2; color: transparent; }
+    .kstep.active { color: #333; font-weight: 600; }
+    .kstep.active .kic { border-color: var(--green2); border-top-color: transparent; animation: kspin .7s linear infinite; }
+    .kstep.done { color: #1e8449; }
+    .kstep.done .kic { background: var(--green2); border-color: var(--green2); color: #fff; }
+    @keyframes kspin { to { transform: rotate(360deg); } }
+
     /* ── Banner unduh ulang ── */
     .redl { display: none; align-items: center; gap: 12px; background: #eafaf0;
       border: 1px solid #bfe6cd; border-radius: 10px; padding: 12px 14px; margin-bottom: 18px;
@@ -301,8 +317,8 @@
           </div>
           <div class="row">
             <div class="field">
-              <label class="lbl">Jabatan / NIP <span class="req">*</span></label>
-              <input type="text" name="jabatanNip" placeholder="Contoh: Kaprodi / 198501012010012001" required>
+              <label class="lbl">NIP <span class="req">*</span></label>
+              <input type="text" name="jabatanNip" id="jabatanNip" placeholder="Contoh: 198501012010012001" required>
             </div>
             <div class="field">
               <label class="lbl">No. HP / WA <span class="req">*</span></label>
@@ -494,6 +510,15 @@
 
   <div id="status"></div>
 
+  <!-- Overlay proses pengiriman -->
+  <div id="kirimOverlay">
+    <div class="kirim-box">
+      <h3>⏳ Menyimpan Laporan…</h3>
+      <p>Mohon tunggu, jangan tutup halaman.</p>
+      <div id="kirimSteps"></div>
+    </div>
+  </div>
+
   <div id="done">
     <div class="box">
       <div class="ic">✅</div>
@@ -594,13 +619,14 @@
       PJ_LIST.filter(p => (!unit || p.unit === unit) && p.nama).forEach(p => {
         const o = document.createElement('option'); o.value = p.nama; dlP.appendChild(o);
       });
-      // AUTO-ISI "Mengetahui" begitu unit dipilih (umumnya 1 Ketua Jurusan per unit)
+      // AUTO-ISI "Mengetahui" begitu unit dipilih (1 Ketua Jurusan per unit). TTD lama TIDAK dihapus.
       const kEl = document.getElementById('namaKajur');
       if (unit && kajurs.length) {
-        document.getElementById('nipKajur').value = '';
-        if (sig.kajur) sig.kajur.data = '';
-        kEl.value = kajurs[0].nama;
-        kEl.dispatchEvent(new Event('change'));
+        const m = kajurs[0];
+        kEl.value = m.nama;
+        document.getElementById('nipKajur').value = m.nip || '';
+        if (m.ttd) { sig.kajur.data = m.ttd; updateSigPreview('kajur'); }  // hanya muat bila ada TTD tersimpan
+        refreshPreview();
       } else if (unit) {
         kEl.value = '';
       }
@@ -630,21 +656,24 @@
       const unit = document.getElementById('prodi').value;
       const m = MENGETAHUI.find(x => x.unit === unit && x.nama.toLowerCase() === this.value.trim().toLowerCase());
       if (!m) return;
-      const nip = document.getElementById('nipKajur'); if (!nip.value.trim() && m.nip) nip.value = m.nip;
-      if (m.ttd) { sig.kajur.data = m.ttd; updateSigPreview('kajur'); }
+      document.getElementById('nipKajur').value = m.nip || document.getElementById('nipKajur').value;
+      if (m.ttd) { sig.kajur.data = m.ttd; updateSigPreview('kajur'); }  // hanya muat bila ada TTD tersimpan
       refreshPreview();
     });
-    // Pilih nama Penanggung Jawab → isi NIP + muat TTD + cerminkan ke Identitas (Nama PJ)
-    document.getElementById('namaKaprodi').addEventListener('change', function () {
+    // Penanggung Jawab: Identitas (A) & Tanda Tangan (F) SELALU sinkron
+    function applyPJ(nama) {
+      nama = (nama || '').trim();
       const unit = document.getElementById('prodi').value;
-      const p = PJ_LIST.find(x => (!x.unit || x.unit === unit) && x.nama.toLowerCase() === this.value.trim().toLowerCase());
-      const namaPjEl = document.getElementById('namaPj'); if (!namaPjEl.value.trim()) namaPjEl.value = this.value;
+      document.getElementById('namaPj').value = nama;
+      document.getElementById('namaKaprodi').value = nama;
+      const p = PJ_LIST.find(x => (!x.unit || x.unit === unit) && x.nama.toLowerCase() === nama.toLowerCase());
       if (p) {
-        const nip = document.getElementById('nipKaprodi'); if (!nip.value.trim() && p.nip) nip.value = p.nip;
-        if (p.ttd) { sig.kaprodi.data = p.ttd; updateSigPreview('kaprodi'); }
+        if (p.nip) { document.getElementById('jabatanNip').value = p.nip; document.getElementById('nipKaprodi').value = p.nip; }
+        if (p.ttd) { sig.kaprodi.data = p.ttd; updateSigPreview('kaprodi'); }  // muat TTD bila ada; bila tidak, biarkan
       }
       refreshPreview();
-    });
+    }
+    document.getElementById('namaKaprodi').addEventListener('change', function () { applyPJ(this.value); });
 
     // Default tanggal = Jumat terdekat (hari ini jika Jumat)
     // Format tanggal LOKAL (hindari pergeseran hari akibat toISOString/UTC)
@@ -730,6 +759,28 @@
       s.style.display = 'block';
       if (type !== 'loading') setTimeout(() => s.style.display = 'none', 4000);
     }
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // ── Overlay proses kirim dengan checklist langkah ──
+    const KIRIM_STEPS = [
+      'Mengirim data ke server',
+      'Menyimpan ke sheet Laporan',
+      'Memperbarui master (Mengetahui & PJ)',
+      'Mengupload foto ke Google Drive',
+      'Menyiapkan output PDF',
+    ];
+    function kirimShow() {
+      const box = document.getElementById('kirimSteps');
+      box.innerHTML = KIRIM_STEPS.map((s, i) =>
+        `<div class="kstep" id="kstep${i}"><span class="kic">✓</span><span>${s}</span></div>`).join('');
+      document.getElementById('kirimOverlay').classList.add('show');
+    }
+    function kirimStep(i) {
+      for (let k = 0; k < i; k++) { const e = document.getElementById('kstep' + k); if (e) e.className = 'kstep done'; }
+      const cur = document.getElementById('kstep' + i); if (cur) cur.className = 'kstep active';
+    }
+    function kirimDone() { KIRIM_STEPS.forEach((_, k) => { const e = document.getElementById('kstep' + k); if (e) e.className = 'kstep done'; }); }
+    function kirimHide() { document.getElementById('kirimOverlay').classList.remove('show'); }
 
     // ════════ TANDA TANGAN DIGITAL (modal pop-up — nyaman di HP) ════════
     const sig = { kajur: { data: '' }, kaprodi: { data: '' } };
@@ -797,18 +848,8 @@
       if (typeof refreshUnitDependent === 'function') refreshUnitDependent();
       refreshPreview();
     });
-    // Pilih Nama PJ di Identitas → cerminkan ke Ka. Prodi + isi Jabatan/NIP + TTD
-    document.getElementById('namaPj').addEventListener('change', function () {
-      const unit = document.getElementById('prodi').value;
-      const kap = document.getElementById('namaKaprodi'); if (!kap.value.trim()) kap.value = this.value;
-      const p = PJ_LIST.find(x => (!x.unit || x.unit === unit) && x.nama.toLowerCase() === this.value.trim().toLowerCase());
-      if (p) {
-        const jab = document.querySelector('[name="jabatanNip"]'); if (jab && !jab.value.trim() && p.nip) jab.value = p.nip;
-        const nipK = document.getElementById('nipKaprodi'); if (nipK && !nipK.value.trim() && p.nip) nipK.value = p.nip;
-        if (p.ttd) { sig.kaprodi.data = p.ttd; updateSigPreview('kaprodi'); }
-      }
-      refreshPreview();
-    });
+    // Pilih/ketik Nama PJ di Identitas (A) → otomatis isi juga di Tanda Tangan (F)
+    document.getElementById('namaPj').addEventListener('change', function () { applyPJ(this.value); });
 
     // ════════ KUMPULKAN DATA + BANGUN LAPORAN PDF ════════
     function gatherData(f) {
@@ -853,7 +894,7 @@
            ${idRow('Hari / Tanggal', esc(d.hari) + ', ' + esc(tglStr))}
            ${idRow('Jurusan / Prodi', esc(d.prodi))}
            ${idRow('Penanggung Jawab', esc(d.namaPj))}
-           ${idRow('Jabatan / NIP', esc(d.jabatanNip))}
+           ${idRow('NIP', esc(d.jabatanNip))}
            ${idRow('No. HP / WA', esc(d.hp))}
          </table>`,
 
@@ -976,6 +1017,9 @@
 
       // Demo mode (backend belum aktif) → tetap bisa unduh PDF, tanpa simpan server
       if (GAS_URL.startsWith('__')) {
+        kirimShow();
+        for (let i = 0; i < KIRIM_STEPS.length; i++) { await sleep(550); kirimStep(i); }
+        await sleep(450); kirimDone(); await sleep(350); kirimHide();
         saveLast(data);
         document.getElementById('doneMsg').textContent = 'Mode demo: laporan TIDAK tersimpan ke server (backend belum aktif), tetapi PDF tetap bisa diunduh.';
         document.getElementById('done').style.display = 'flex';
@@ -989,7 +1033,10 @@
         return;
       }
 
-      toast('Mengirim laporan...', 'loading');
+      kirimShow();
+      // Jalankan langkah-langkah secara progresif selama request berjalan (≈ tiap 1 dtk, berhenti sebelum langkah terakhir)
+      let kstep = 0; kirimStep(0);
+      const kTimer = setInterval(() => { if (kstep < KIRIM_STEPS.length - 1) kirimStep(++kstep); }, 1000);
       try {
         const res = await fetch(GAS_URL, {
           method: 'POST',
@@ -997,8 +1044,9 @@
           body: JSON.stringify({ action: 'submitLaporan', ...data }),
         });
         const out = await res.json();
+        clearInterval(kTimer);
         if (out.status === 'success') {
-          document.getElementById('status').style.display = 'none';
+          kirimDone(); await sleep(450); kirimHide();
           data.nomor = out.nomor; data.waktu = out.waktu;
           saveLast(data);
           document.getElementById('doneMsg').textContent =
@@ -1009,6 +1057,7 @@
           throw new Error(out.error || 'Gagal menyimpan laporan.');
         }
       } catch (err) {
+        clearInterval(kTimer); kirimHide();
         toast('Gagal: ' + err.message, 'err');
         btn.disabled = false;
       }

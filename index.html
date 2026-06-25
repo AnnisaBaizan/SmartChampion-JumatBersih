@@ -528,11 +528,81 @@
       font-weight: 700;
     }
 
+    .chart-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 820px) {
+      .chart-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .chart-title {
       font-size: 12.5px;
       font-weight: 700;
       color: #444;
       margin-bottom: 4px;
+    }
+
+    /* Aktivitas paling sering (bar) */
+    .akt-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-size: 12.5px;
+    }
+
+    .akt-row .nm {
+      flex: 0 0 240px;
+      color: #444;
+    }
+
+    @media (max-width: 640px) {
+      .akt-row .nm {
+        flex-basis: 130px;
+      }
+    }
+
+    .akt-row .barwrap {
+      flex: 1;
+      background: #eef2ef;
+      border-radius: 6px;
+      overflow: hidden;
+      height: 18px;
+    }
+
+    .akt-row .bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green2), var(--green));
+      border-radius: 6px;
+    }
+
+    .akt-row .ct {
+      flex: 0 0 26px;
+      text-align: right;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    /* Spinner loading dashboard */
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid #d7e6dd;
+      border-top-color: var(--green2);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .chart {
@@ -674,11 +744,20 @@
         </span>
       </h3>
       <div class="body" style="padding:16px 18px;">
-        <div class="chart-title">Tingkat Kepatuhan (%)</div>
-        <div id="chartKepatuhan" class="chart"></div>
-        <div class="chart-title" style="margin-top:18px;">Jumlah Peserta per Golongan</div>
-        <div id="chartPeserta" class="chart"></div>
+        <div class="chart-row">
+          <div><div class="chart-title">Tingkat Kepatuhan (%)</div><div id="chartKepatuhan" class="chart"></div></div>
+          <div><div class="chart-title">Jumlah Peserta per Golongan</div><div id="chartPeserta" class="chart"></div></div>
+        </div>
         <div id="trenEmpty" class="muted" style="text-align:center;padding:14px;" hidden>Belum ada data tren.</div>
+      </div>
+    </div>
+
+    <!-- Insight: aktivitas paling sering -->
+    <div class="card">
+      <h3>🧹 Aktivitas Paling Sering Dilakukan (minggu ini)</h3>
+      <div class="body" style="padding:16px 18px;">
+        <div id="topAkt"></div>
+        <div id="topAktEmpty" class="muted" style="text-align:center;padding:10px;" hidden>Belum ada data aktivitas.</div>
       </div>
     </div>
 
@@ -818,8 +897,19 @@
       document.getElementById('bdDosen').textContent = p.dosen;
       document.getElementById('bdTendik').textContent = p.tendik;
       document.getElementById('bdMhs').textContent = p.mahasiswa;
+      renderTop(data.topAktivitas);
       document.getElementById('loading').hidden = true;
       document.getElementById('tbl').hidden = false;
+    }
+
+    function renderTop(list) {
+      const el = document.getElementById('topAkt'), empty = document.getElementById('topAktEmpty');
+      list = list || [];
+      if (!list.length) { el.innerHTML = ''; empty.hidden = false; return; }
+      empty.hidden = true;
+      const max = Math.max.apply(null, list.map(x => x.count));
+      el.innerHTML = list.map(x =>
+        `<div class="akt-row"><div class="nm">${x.nama}</div><div class="barwrap"><div class="bar" style="width:${Math.round(x.count / max * 100)}%"></div></div><div class="ct">${x.count}</div></div>`).join('');
     }
 
     function demoData() {
@@ -846,7 +936,15 @@
       const totalUnit = PRODI.length;
       return {
         rows, sudah, belum: totalUnit - sudah, totalUnit, kepatuhan: Math.round(sudah / totalUnit * 100),
-        peserta: { dosen, tendik, mahasiswa: mhs, total: dosen + tendik + mhs }
+        peserta: { dosen, tendik, mahasiswa: mhs, total: dosen + tendik + mhs },
+        topAktivitas: [
+          { nama: 'Pembersihan ruang kelas', count: 7 },
+          { nama: 'Pengelolaan sampah terpilah (organik & anorganik)', count: 6 },
+          { nama: 'Penataan dokumen & arsip', count: 5 },
+          { nama: 'Gotong royong halaman / area parkir', count: 4 },
+          { nama: 'Pembersihan kamar mandi dan wastafel', count: 3 },
+          { nama: 'Perawatan tanaman / penghijauan lingkungan', count: 2 },
+        ]
       };
     }
 
@@ -1008,11 +1106,14 @@
     }
 
     async function loadDashboard() {
-      document.getElementById('loading').hidden = false;
+      const ld = document.getElementById('loading');
+      ld.innerHTML = '<div class="spinner"></div>Memuat data dashboard…';
+      ld.hidden = false;
       document.getElementById('tbl').hidden = true;
       const tgl = document.getElementById('tglFilter').value;
 
       if (GAS_URL.startsWith('__')) {
+        await new Promise(r => setTimeout(r, 600));  // animasi loading sebentar (demo)
         render(demoData());
         renderSlides(demoFotos());
         loadTren();
@@ -1029,7 +1130,7 @@
         const rows = master.map(p => byProdi[p] || { prodi: p, status: 'BELUM' });
         render({
           rows: rows, sudah: out.sudah, belum: out.belum, totalUnit: out.totalUnit,
-          kepatuhan: out.kepatuhan, peserta: out.peserta
+          kepatuhan: out.kepatuhan, peserta: out.peserta, topAktivitas: out.topAktivitas
         });
         renderSlides(out.fotos || []);
         loadTren();

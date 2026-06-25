@@ -524,7 +524,7 @@ function getDashboard(tanggal) {
         seen[prodi] = {
           prodi: prodi, status: 'SUDAH', waktu: r[25], ket: '',
           dosen: Number(r[8]) || 0, tendik: Number(r[9]) || 0, mahasiswa: Number(r[10]) || 0,
-          peserta: Number(r[11]) || 0,
+          peserta: Number(r[11]) || 0, akt: String(r[12] || ''),
         };
         // kumpulkan foto dokumentasi untuk slideshow (URL dipisah koma; kolom Video r[24] dikecualikan)
         [['Sebelum', r[22]], ['Sesudah', r[23]]].forEach(pair => {
@@ -537,11 +537,16 @@ function getDashboard(tanggal) {
     }
     // agregasi dari hasil dedup (1 prodi dihitung sekali)
     let dosen = 0, tendik = 0, mahasiswa = 0;
+    const aktCount = {};
     Object.keys(seen).forEach(p => {
       rows.push(seen[p]);
       totalPeserta += seen[p].peserta || 0;
       dosen += seen[p].dosen; tendik += seen[p].tendik; mahasiswa += seen[p].mahasiswa;
+      String(seen[p].akt || '').split(',').forEach(a => { a = a.trim(); if (a) aktCount[a] = (aktCount[a] || 0) + 1; });
     });
+    const topAktivitas = Object.keys(aktCount)
+      .map(k => ({ nama: k, count: aktCount[k] }))
+      .sort((a, b) => b.count - a.count).slice(0, 6);
     const prodiList = _getProdiMaster().map(p => p.prodi);
     const totalUnit = prodiList.length || 1;
     const sudah = rows.length;
@@ -552,6 +557,7 @@ function getDashboard(tanggal) {
       peserta: { dosen: dosen, tendik: tendik, mahasiswa: mahasiswa, total: totalPeserta },
       sudah: sudah, belum: Math.max(0, totalUnit - sudah), totalUnit: totalUnit,
       kepatuhan: Math.round(sudah / totalUnit * 100),
+      topAktivitas: topAktivitas,
     };
   } catch (err) {
     return { error: err.message };
