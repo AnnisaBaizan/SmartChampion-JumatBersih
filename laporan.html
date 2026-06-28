@@ -357,6 +357,11 @@
               <input type="number" name="mahasiswa" min="0" value="0">
               <div class="help">orang</div>
             </div>
+            <div class="field">
+              <label class="lbl">Jumlah Champion</label>
+              <input type="number" name="champion" min="0" value="0">
+              <div class="help">orang</div>
+            </div>
           </div>
         </div>
       </div>
@@ -891,6 +896,7 @@
         tanggal: f.tanggal.value, hari: f.hari.value, prodi: f.prodi.value,
         namaPj: f.namaPj.value.trim(), jabatanNip: f.jabatanNip.value.trim(), hp: '',
         dosen: Number(f.dosen.value) || 0, tendik: Number(f.tendik.value) || 0, mahasiswa: Number(f.mahasiswa.value) || 0,
+        champion: Number(f.champion.value) || 0,
         aktivitas, aktivitasLain: f.aktivitasLain.value.trim(),
         sebelum: f.sebelum.value, sesudah: f.sesudah.value,
         kendala: f.kendala.value.trim(), catatan: f.catatan.value.trim(),
@@ -934,7 +940,8 @@
            ${idRow('Dosen Hadir', d.dosen + ' orang')}
            ${idRow('Tendik Hadir', d.tendik + ' orang')}
            ${idRow('Mahasiswa Terlibat', d.mahasiswa + ' orang')}
-           ${idRow('Total Peserta', '<b>' + (d.dosen + d.tendik + d.mahasiswa) + ' orang</b>')}
+           ${idRow('Jumlah Champion', (d.champion || 0) + ' orang')}
+           ${idRow('Total Peserta', '<b>' + (d.dosen + d.tendik + d.mahasiswa + (d.champion || 0)) + ' orang</b>')}
          </table>`,
 
         `<div class="rv-h">C. Aktivitas yang Dilaksanakan</div>

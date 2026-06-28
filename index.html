@@ -454,14 +454,14 @@
     /* ── Pecahan peserta ── */
     .breakdown {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 14px;
       margin-bottom: 22px;
     }
 
-    @media (max-width: 560px) {
+    @media (max-width: 760px) {
       .breakdown {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
       }
     }
 
@@ -501,6 +501,14 @@
 
     .bd.mhs {
       border-left-color: #8e44ad;
+    }
+
+    .bd.champ {
+      border-left-color: #e0a400;
+    }
+
+    .bd.champ .n {
+      color: #b8860b;
     }
 
     /* ── Tren / chart ── */
@@ -733,6 +741,12 @@
           <div class="l">Mahasiswa</div>
         </div>
       </div>
+      <div class="bd champ"><span class="ic">🏆</span>
+        <div>
+          <div class="n" id="bdChamp">–</div>
+          <div class="l">Champion</div>
+        </div>
+      </div>
     </div>
 
     <!-- Tren / grafik -->
@@ -897,6 +911,7 @@
       document.getElementById('bdDosen').textContent = p.dosen;
       document.getElementById('bdTendik').textContent = p.tendik;
       document.getElementById('bdMhs').textContent = p.mahasiswa;
+      document.getElementById('bdChamp').textContent = (p.champion || 0);
       renderTop(data.topAktivitas);
       document.getElementById('loading').hidden = true;
       document.getElementById('tbl').hidden = false;
@@ -929,14 +944,15 @@
       const rows = PRODI.map(p => {
         const e = map[p] || { belum: true };
         if (e.belum) return { prodi: p, status: 'BELUM', notif: true };
-        return { prodi: p, status: 'SUDAH', waktu: e.waktu, dosen: e.d, tendik: e.t, mahasiswa: e.m, peserta: e.d + e.t + e.m };
+        const c = e.c != null ? e.c : Math.max(1, Math.round(e.d / 2));
+        return { prodi: p, status: 'SUDAH', waktu: e.waktu, dosen: e.d, tendik: e.t, mahasiswa: e.m, champion: c, peserta: e.d + e.t + e.m + c };
       });
-      let dosen = 0, tendik = 0, mhs = 0, sudah = 0;
-      rows.forEach(r => { if (r.status === 'SUDAH') { sudah++; dosen += r.dosen; tendik += r.tendik; mhs += r.mahasiswa; } });
+      let dosen = 0, tendik = 0, mhs = 0, champ = 0, sudah = 0;
+      rows.forEach(r => { if (r.status === 'SUDAH') { sudah++; dosen += r.dosen; tendik += r.tendik; mhs += r.mahasiswa; champ += r.champion; } });
       const totalUnit = PRODI.length;
       return {
         rows, sudah, belum: totalUnit - sudah, totalUnit, kepatuhan: Math.round(sudah / totalUnit * 100),
-        peserta: { dosen, tendik, mahasiswa: mhs, total: dosen + tendik + mhs },
+        peserta: { dosen, tendik, mahasiswa: mhs, champion: champ, total: dosen + tendik + mhs + champ },
         topAktivitas: [
           { nama: 'Pembersihan ruang kelas', count: 7 },
           { nama: 'Pengelolaan sampah terpilah (organik & anorganik)', count: 6 },
@@ -986,18 +1002,18 @@
     function demoTren(mode) {
       if (mode === 'bulanan') return {
         mode, labels: ['2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06'],
-        kepatuhan: [45, 55, 60, 68, 74, 82], dosen: [42, 50, 58, 63, 70, 78], tendik: [16, 19, 22, 25, 29, 32], mahasiswa: [28, 35, 40, 47, 53, 61]
+        kepatuhan: [45, 55, 60, 68, 74, 82], dosen: [42, 50, 58, 63, 70, 78], tendik: [16, 19, 22, 25, 29, 32], mahasiswa: [28, 35, 40, 47, 53, 61], champion: [10, 14, 18, 22, 27, 33]
       };
-      const labels = [], kepatuhan = [], dosen = [], tendik = [], mahasiswa = [];
+      const labels = [], kepatuhan = [], dosen = [], tendik = [], mahasiswa = [], champion = [];
       const base = new Date(); base.setDate(base.getDate() - ((base.getDay() - 5 + 7) % 7));
       for (let i = 9; i >= 0; i--) {
         const d = new Date(base); d.setDate(d.getDate() - i * 7);
         labels.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
         const prog = 9 - i;
         kepatuhan.push(Math.min(100, 50 + prog * 4 + (i % 2 ? 3 : -2)));
-        dosen.push(20 + prog * 2 + (i % 3)); tendik.push(10 + prog + (i % 2)); mahasiswa.push(15 + prog * 3 + (i % 4));
+        dosen.push(20 + prog * 2 + (i % 3)); tendik.push(10 + prog + (i % 2)); mahasiswa.push(15 + prog * 3 + (i % 4)); champion.push(6 + prog * 2 + (i % 2));
       }
-      return { mode, labels, kepatuhan, dosen, tendik, mahasiswa };
+      return { mode, labels, kepatuhan, dosen, tendik, mahasiswa, champion };
     }
     function renderTren(t) {
       const has = t.labels && t.labels.length;
@@ -1009,6 +1025,7 @@
           { name: 'Dosen', color: '#2980b9', data: t.dosen },
           { name: 'Tendik', color: '#16a085', data: t.tendik },
           { name: 'Mahasiswa', color: '#8e44ad', data: t.mahasiswa },
+          { name: 'Champion', color: '#e0a400', data: t.champion || [] },
         ]
       });
     }

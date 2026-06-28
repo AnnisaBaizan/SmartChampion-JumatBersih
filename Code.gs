@@ -116,7 +116,7 @@ const AKTIVITAS_HEADERS = ['Aktivitas'];
 // Urutan kolom sheet arsip (header otomatis dibuat saat sheet kosong)
 const HEADERS = [
   'Timestamp', 'Nomor', 'Tanggal', 'Hari', 'Prodi', 'Nama PJ', 'Jabatan/NIP', 'No. HP/WA',
-  'Dosen', 'Tendik', 'Mahasiswa', 'Total Peserta', 'Aktivitas', 'Aktivitas Lain',
+  'Dosen', 'Tendik', 'Mahasiswa', 'Champion', 'Total Peserta', 'Aktivitas', 'Aktivitas Lain',
   'Kondisi Sebelum', 'Kondisi Sesudah', 'Kendala', 'Catatan',
   'Mengetahui', 'NIP Mengetahui', 'Penanggung Jawab', 'NIP PJ',
   'Foto Sebelum', 'Foto Sesudah', 'Video', 'Waktu Kirim',
@@ -321,7 +321,7 @@ function handleSubmitLaporan(d) {
     const now = new Date();
     const tz = Session.getScriptTimeZone() || 'Asia/Jakarta';
     const waktuKirim = Utilities.formatDate(now, tz, 'HH.mm') + ' WIB';
-    const totalPeserta = (Number(d.dosen) || 0) + (Number(d.tendik) || 0) + (Number(d.mahasiswa) || 0);
+    const totalPeserta = (Number(d.dosen) || 0) + (Number(d.tendik) || 0) + (Number(d.mahasiswa) || 0) + (Number(d.champion) || 0);
 
     // ── Upload media DULU (lambat) — di luar lock agar lock dipegang sesingkat mungkin ──
     const folder = _getFolder(d.prodi, d.tanggal);
@@ -392,7 +392,7 @@ function handleSubmitLaporan(d) {
 function _rowLaporan(d, ts, nomor, totalPeserta, waktuKirim, urlSebelum, urlSesudah, urlVideo) {
   return [
     ts, nomor, d.tanggal, d.hari, d.prodi, d.namaPj, d.jabatanNip, d.hp,
-    Number(d.dosen) || 0, Number(d.tendik) || 0, Number(d.mahasiswa) || 0, totalPeserta,
+    Number(d.dosen) || 0, Number(d.tendik) || 0, Number(d.mahasiswa) || 0, Number(d.champion) || 0, totalPeserta,
     (d.aktivitas || []).join(', '), d.aktivitasLain || '',
     d.sebelum, d.sesudah, d.kendala || '', d.catatan || '',
     d.namaKajur || '', d.nipKajur || '', d.namaKaprodi || '', d.nipKaprodi || '',
@@ -522,12 +522,12 @@ function getDashboard(tanggal) {
         const prodi = r[4];
         // ambil laporan terbaru per prodi (dedupe: peserta tidak dihitung ganda)
         seen[prodi] = {
-          prodi: prodi, status: 'SUDAH', waktu: r[25], ket: '',
+          prodi: prodi, status: 'SUDAH', waktu: r[26], ket: '',
           dosen: Number(r[8]) || 0, tendik: Number(r[9]) || 0, mahasiswa: Number(r[10]) || 0,
-          peserta: Number(r[11]) || 0, akt: String(r[12] || ''),
+          champion: Number(r[11]) || 0, peserta: Number(r[12]) || 0, akt: String(r[13] || ''),
         };
-        // kumpulkan foto dokumentasi untuk slideshow (URL dipisah koma; kolom Video r[24] dikecualikan)
-        [['Sebelum', r[22]], ['Sesudah', r[23]]].forEach(pair => {
+        // kumpulkan foto dokumentasi untuk slideshow (URL dipisah koma; kolom Video r[25] dikecualikan)
+        [['Sebelum', r[23]], ['Sesudah', r[24]]].forEach(pair => {
           String(pair[1] || '').split(',').forEach(u => {
             const img = _driveImg(u.trim());
             if (img) fotos.push({ prodi: prodi, label: pair[0], url: img });
@@ -536,12 +536,12 @@ function getDashboard(tanggal) {
       });
     }
     // agregasi dari hasil dedup (1 prodi dihitung sekali)
-    let dosen = 0, tendik = 0, mahasiswa = 0;
+    let dosen = 0, tendik = 0, mahasiswa = 0, champion = 0;
     const aktCount = {};
     Object.keys(seen).forEach(p => {
       rows.push(seen[p]);
       totalPeserta += seen[p].peserta || 0;
-      dosen += seen[p].dosen; tendik += seen[p].tendik; mahasiswa += seen[p].mahasiswa;
+      dosen += seen[p].dosen; tendik += seen[p].tendik; mahasiswa += seen[p].mahasiswa; champion += seen[p].champion || 0;
       String(seen[p].akt || '').split(',').forEach(a => { a = a.trim(); if (a) aktCount[a] = (aktCount[a] || 0) + 1; });
     });
     const topAktivitas = Object.keys(aktCount)
@@ -554,7 +554,7 @@ function getDashboard(tanggal) {
     return {
       rows: rows, tanggal: tanggal, prodiList: prodiList, fotos: fotos,
       totalPeserta: totalPeserta,
-      peserta: { dosen: dosen, tendik: tendik, mahasiswa: mahasiswa, total: totalPeserta },
+      peserta: { dosen: dosen, tendik: tendik, mahasiswa: mahasiswa, champion: champion, total: totalPeserta },
       sudah: sudah, belum: Math.max(0, totalUnit - sudah), totalUnit: totalUnit,
       kepatuhan: Math.round(sudah / totalUnit * 100),
       topAktivitas: topAktivitas,
@@ -578,21 +578,21 @@ function getTren(mode) {
         const key = (mode === 'bulanan') ? tgl.slice(0, 7) : tgl;  // YYYY-MM atau YYYY-MM-DD
         const b = buckets[key] || (buckets[key] = { prodi: {} });
         // dedupe per prodi per periode (peserta diambil sekali)
-        b.prodi[r[4]] = { dosen: Number(r[8]) || 0, tendik: Number(r[9]) || 0, mhs: Number(r[10]) || 0 };
+        b.prodi[r[4]] = { dosen: Number(r[8]) || 0, tendik: Number(r[9]) || 0, mhs: Number(r[10]) || 0, champ: Number(r[11]) || 0 };
       });
     }
     const keys = Object.keys(buckets).sort();
-    const labels = [], kepatuhan = [], dosen = [], tendik = [], mahasiswa = [], pelapor = [];
+    const labels = [], kepatuhan = [], dosen = [], tendik = [], mahasiswa = [], champion = [], pelapor = [];
     keys.forEach(k => {
       const prodis = Object.keys(buckets[k].prodi);
-      let d = 0, t = 0, m = 0;
-      prodis.forEach(p => { const x = buckets[k].prodi[p]; d += x.dosen; t += x.tendik; m += x.mhs; });
+      let d = 0, t = 0, m = 0, c = 0;
+      prodis.forEach(p => { const x = buckets[k].prodi[p]; d += x.dosen; t += x.tendik; m += x.mhs; c += x.champ; });
       labels.push(k);
       pelapor.push(prodis.length);
       kepatuhan.push(Math.min(100, Math.round(prodis.length / totalUnit * 100)));
-      dosen.push(d); tendik.push(t); mahasiswa.push(m);
+      dosen.push(d); tendik.push(t); mahasiswa.push(m); champion.push(c);
     });
-    return { mode: mode, labels: labels, kepatuhan: kepatuhan, dosen: dosen, tendik: tendik, mahasiswa: mahasiswa, pelapor: pelapor, totalUnit: totalUnit };
+    return { mode: mode, labels: labels, kepatuhan: kepatuhan, dosen: dosen, tendik: tendik, mahasiswa: mahasiswa, champion: champion, pelapor: pelapor, totalUnit: totalUnit };
   } catch (err) {
     return { error: err.message };
   }
