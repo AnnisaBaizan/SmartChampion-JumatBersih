@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Laporan Kegiatan Jumat Bersih — SMART Champion</title>
+  <title>Kegiatan Jumat Bersih — SMART Champion</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     :root { --green: #145a32; --green2: #1e8449; --line: #d9e2dc; }
@@ -277,7 +277,7 @@
 <body>
   <header class="app-header">
     <div>
-      <h1>🧹 Laporan Kegiatan Jumat Bersih</h1>
+      <h1>🧹 Kegiatan Jumat Bersih</h1>
       <small>SMART Champion — Poltekkes Kemenkes Palembang</small>
     </div>
     <a href="index.html">← Dashboard</a>
@@ -290,13 +290,13 @@
     </div>
 
     <div class="hint">
-      <b>Petunjuk Pengisian:</b> Laporan ini diisi setiap hari Jumat oleh penanggung jawab masing-masing
-      Jurusan/Program Studi. Setelah dikirim, laporan otomatis terdokumentasi pada Dashboard SMART Champion.
+      <b>Petunjuk Pengisian:</b> Formulir ini diisi setiap hari Jumat oleh penanggung jawab masing-masing
+      Jurusan/Program Studi. Setelah dikirim, kegiatan otomatis terdokumentasi pada Dashboard SMART Champion.
       Prodi yang belum mengumpulkan sebelum pukul <b>15.00 WIB</b> akan mendapatkan notifikasi otomatis.
     </div>
 
     <div class="redl" id="redl">
-      📄 <div>Laporan terakhir: <b id="redlInfo"></b></div>
+      📄 <div>Kegiatan terakhir: <b id="redlInfo"></b></div>
       <button type="button" onclick="reDownload()">⬇️ Unduh ulang PDF</button>
     </div>
 
@@ -305,7 +305,7 @@
       <form id="form">
       <!-- A. IDENTITAS -->
       <div class="section">
-        <h3>A. IDENTITAS PELAPORAN</h3>
+        <h3>A. IDENTITAS KEGIATAN</h3>
         <div class="body">
           <div class="row">
             <div class="field">
@@ -446,7 +446,7 @@
         <h3>F. PERNYATAAN &amp; TANDA TANGAN</h3>
         <div class="body">
           <div class="statement">
-            Saya yang bertanda tangan di bawah ini menyatakan bahwa laporan Kegiatan Jumat Bersih ini
+            Saya yang bertanda tangan di bawah ini menyatakan bahwa Kegiatan Jumat Bersih ini
             benar dan dapat dipertanggungjawabkan sebagai dokumentasi program budaya kerja
             Poltekkes Kemenkes Palembang.
           </div>
@@ -485,7 +485,7 @@
               <b>Tanda tangan akan disimpan ke dalam sistem (Google Drive)</b> dan dapat dipakai ulang
               otomatis saat memilih nama yang sama berikutnya. Pastikan tanda tangan
               <b>rapi, jelas, dan benar milik Anda</b> — jangan asal/sembarangan, karena akan tercetak
-              pada PDF laporan resmi dan tersimpan permanen. Jika kurang rapi, klik <b>Hapus</b> lalu ulangi.
+              pada dokumen PDF resmi dan tersimpan permanen. Jika kurang rapi, klik <b>Hapus</b> lalu ulangi.
               <label class="ttd-ack">
                 <input type="checkbox" id="ttdAck">
                 Saya memastikan tanda tangan sudah rapi &amp; benar, dan setuju disimpan ke sistem.
@@ -496,14 +496,14 @@
       </div>
 
       <div class="actions">
-        <button type="submit" class="btn btn-primary" id="btnSubmit">📤 Kirim Laporan</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmit">📤 Kirim Kegiatan</button>
         <button type="button" class="btn btn-ghost" onclick="printReport(gatherData())">🖨️ Unduh PDF</button>
       </div>
     </form>
       </div><!-- /col-form -->
 
       <aside class="col-preview">
-        <div class="preview-head">📄 Pratinjau Laporan (PDF) — terisi otomatis</div>
+        <div class="preview-head">📄 Pratinjau PDF — terisi otomatis</div>
         <div id="reportView"><div class="paper-scale"><div id="reportDoc"></div></div></div>
       </aside>
     </div><!-- /layout -->
@@ -528,7 +528,7 @@
   <!-- Overlay proses pengiriman -->
   <div id="kirimOverlay">
     <div class="kirim-box">
-      <h3>⏳ Menyimpan Laporan…</h3>
+      <h3>⏳ Menyimpan…</h3>
       <p>Mohon tunggu, jangan tutup halaman.</p>
       <div id="kirimSteps"></div>
     </div>
@@ -537,10 +537,10 @@
   <div id="done">
     <div class="box">
       <div class="ic">✅</div>
-      <h3>Laporan Terkirim!</h3>
-      <p id="doneMsg">Laporan Jumat Bersih Anda sudah tersimpan dan otomatis muncul di Dashboard SMART Champion.</p>
+      <h3>Kegiatan Terkirim!</h3>
+      <p id="doneMsg">Kegiatan Jumat Bersih Anda sudah tersimpan dan otomatis muncul di Dashboard SMART Champion.</p>
       <div class="actions">
-        <button type="button" class="btn btn-primary" onclick="reDownload()">🖨️ Unduh PDF Laporan</button>
+        <button type="button" class="btn btn-primary" onclick="reDownload()">🖨️ Unduh PDF</button>
         <a class="btn btn-ghost" href="index.html" style="text-decoration:none;display:inline-block;">📊 Lihat Dashboard</a>
       </div>
     </div>
@@ -801,7 +801,7 @@
     // ── Overlay proses kirim dengan checklist langkah ──
     const KIRIM_STEPS = [
       'Mengirim data ke server',
-      'Menyimpan ke sheet Laporan',
+      'Menyimpan ke database',
       'Memperbarui master (Mengetahui & PJ)',
       'Mengupload foto ke Google Drive',
       'Menyiapkan output PDF',
@@ -924,10 +924,10 @@
       // Dokumen dipecah menjadi blok-blok; tiap blok tidak boleh terpotong antar halaman.
       const blocks = [
         `<img class="rv-kop" src="KOP.png"><hr class="rv-line">
-         <div class="rv-title">Laporan Kegiatan Jumat Bersih</div>
+         <div class="rv-title">Kegiatan Jumat Bersih</div>
          <div class="rv-nomor">${d.nomor ? 'Nomor: ' + esc(d.nomor) : '<span style="color:#999">(nomor otomatis saat dikirim)</span>'}</div>`,
 
-        `<div class="rv-h">A. Identitas Pelaporan</div>
+        `<div class="rv-h">A. Identitas Kegiatan</div>
          <table class="rv-id">
            ${idRow('Hari / Tanggal', esc(d.hari) + ', ' + esc(tglStr))}
            ${idRow('Jurusan / Prodi', esc(d.prodi))}
@@ -963,7 +963,7 @@
          <div class="rv-fotos">${fotoSesudahHtml}</div>${videoNote}`,
 
         `<div class="rv-h">G. Pernyataan &amp; Tanda Tangan</div>
-         <div class="rv-statement">Saya yang bertanda tangan di bawah ini menyatakan bahwa laporan Kegiatan Jumat Bersih
+         <div class="rv-statement">Saya yang bertanda tangan di bawah ini menyatakan bahwa Kegiatan Jumat Bersih
            ini benar dan dapat dipertanggungjawabkan sebagai dokumentasi program budaya kerja Poltekkes Kemenkes Palembang.</div>
          <div class="rv-ttd">
            <div class="col">Mengetahui,${ttdImg(d.ttdKajur)}
@@ -1000,7 +1000,7 @@
       if (!d || !d.prodi || !d.tanggal) { toast('Lengkapi minimal Tanggal & Prodi sebelum cetak.', 'err'); return; }
       buildReportView(d);
       const oldTitle = document.title;
-      document.title = `Laporan_JumatBersih_${(d.prodi || '').replace(/\W+/g, '-')}_${d.tanggal}`;
+      document.title = `Kegiatan_JumatBersih_${(d.prodi || '').replace(/\W+/g, '-')}_${d.tanggal}`;
       setTimeout(() => { window.print(); document.title = oldTitle; }, 250);
     }
 
@@ -1019,7 +1019,7 @@
     }
     function reDownload() {
       const d = currentReport || JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-      if (!d) { toast('Belum ada laporan untuk diunduh.', 'err'); return; }
+      if (!d) { toast('Belum ada data untuk diunduh.', 'err'); return; }
       printReport(d);
     }
     (function initReDownload() {
@@ -1059,7 +1059,7 @@
         for (let i = 0; i < KIRIM_STEPS.length; i++) { await sleep(550); kirimStep(i); }
         await sleep(450); kirimDone(); await sleep(350); kirimHide();
         saveLast(data);
-        document.getElementById('doneMsg').textContent = 'Mode demo: laporan TIDAK tersimpan ke server (backend belum aktif), tetapi PDF tetap bisa diunduh.';
+        document.getElementById('doneMsg').textContent = 'Mode demo: data TIDAK tersimpan ke server (backend belum aktif), tetapi PDF tetap bisa diunduh.';
         document.getElementById('done').style.display = 'flex';
         btn.disabled = false;
         return;
@@ -1088,11 +1088,11 @@
           data.nomor = out.nomor; data.waktu = out.waktu;
           saveLast(data);
           document.getElementById('doneMsg').textContent =
-            (out.nomor ? 'Nomor laporan: ' + out.nomor + '. ' : '') + 'Tersimpan & muncul di Dashboard. Unduh PDF di bawah.';
+            (out.nomor ? 'Nomor: ' + out.nomor + '. ' : '') + 'Tersimpan & muncul di Dashboard. Unduh PDF di bawah.';
           document.getElementById('done').style.display = 'flex';
           btn.disabled = false;
         } else {
-          throw new Error(out.error || 'Gagal menyimpan laporan.');
+          throw new Error(out.error || 'Gagal menyimpan data.');
         }
       } catch (err) {
         clearInterval(kTimer); kirimHide();

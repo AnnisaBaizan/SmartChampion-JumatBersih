@@ -675,17 +675,17 @@
       <h1>📊 Dashboard SMART Champion</h1>
       <small>Jumat Bersih — Poltekkes Kemenkes Palembang</small>
     </div>
-    <a href="laporan.html" class="btn-form">📝 Isi Laporan Jumat Bersih</a>
+    <a href="laporan.html" class="btn-form">📝 Isi Kegiatan Jumat Bersih</a>
   </header>
 
   <div class="wrap">
     <div class="toolbar">
-      <h2>Status Laporan Jumat Bersih</h2>
+      <h2>Status Kegiatan Jumat Bersih</h2>
       <div class="spacer"></div>
       <label style="font-size:12px;color:#777;">Tanggal Jumat:</label>
       <input type="date" id="tglFilter">
       <button onclick="loadDashboard()">🔄 Muat</button>
-      <a href="laporan.html" class="btn-isi">📝 Isi Laporan</a>
+      <a href="laporan.html" class="btn-isi">📝 Isi Kegiatan</a>
     </div>
 
     <!-- Slideshow Sebelum|Sesudah berdampingan (full-width) -->
@@ -783,7 +783,7 @@
           <thead>
             <tr>
               <th>Jurusan / Program Studi</th>
-              <th>Status Laporan</th>
+              <th>Status Kegiatan</th>
               <th>Waktu Kirim</th>
               <th>Ket.</th>
             </tr>
@@ -842,7 +842,7 @@
           <div class="notif-sample">
             <span class="tag">NOTIFIKASI OTOMATIS — BELUM MENGUMPULKAN LAPORAN</span>
             <div>Yth. Ketua Jurusan/Kaprodi <b>[NAMA_PRODI]</b></div>
-            <div style="margin:8px 0;">Laporan Jumat Bersih tanggal <b>[TANGGAL]</b> belum masuk ke sistem
+            <div style="margin:8px 0;">Kegiatan Jumat Bersih tanggal <b>[TANGGAL]</b> belum masuk ke sistem
               SMART Champion. Batas pengumpulan: <b>Jumat pukul 15.00 WIB</b>.</div>
             <div>Akses form: <a href="laporan.html">laporan.html</a> <span style="color:#999">(link relatif — otomatis
                 ikut domain yang aktif)</span></div>
@@ -853,13 +853,13 @@
       <div class="card">
         <h3>Alur Sistem SMART Champion</h3>
         <ol class="steps">
-          <li><b>Prodi Login</b> — Masuk ke portal Poltekkes → Menu SMART Champion → Form Laporan</li>
+          <li><b>Prodi Login</b> — Masuk ke portal Poltekkes → Menu SMART Champion → Form Kegiatan</li>
           <li><b>Isi &amp; Kirim Form</b> — Lengkapi seluruh bagian termasuk foto sebelum &amp; sesudah</li>
           <li><b>Otomatis Tersimpan</b> — Data langsung tersimpan di database dan tampil di dashboard</li>
           <li><b>Dashboard Update</b> — Status prodi berubah menjadi SUDAH dan waktu kirim tercatat</li>
           <li><b>Cron Job Monitor</b> — Sistem memeriksa prodi yang belum lapor sesuai jadwal</li>
           <li><b>Notifikasi Terkirim</b> — Email + WhatsApp dikirim otomatis ke Ketua Jurusan/Kaprodi</li>
-          <li><b>Arsip Terdokumentasi</b> — Laporan tersimpan permanen sebagai bukti dukung budaya kerja</li>
+          <li><b>Arsip Terdokumentasi</b> — Dokumentasi tersimpan permanen sebagai bukti dukung budaya kerja</li>
         </ol>
       </div>
     </div>

@@ -625,11 +625,11 @@ function _prodiBelumLapor(tanggal) {
 // ============================================================
 function _emailKonfirmasi(d, nomor, totalPeserta) {
   try {
-    const subjek = `✅ Laporan Jumat Bersih Diterima — ${d.prodi} (${d.tanggal})`;
+    const subjek = `✅ Kegiatan Jumat Bersih Diterima — ${d.prodi} (${d.tanggal})`;
     const html =
       `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;border:1px solid #e0e0e0;border-radius:10px;overflow:hidden">
         <div style="background:#145a32;color:#fff;padding:18px 20px">
-          <h2 style="margin:0;font-size:18px">🧹 Laporan Jumat Bersih Diterima</h2>
+          <h2 style="margin:0;font-size:18px">🧹 Kegiatan Jumat Bersih Diterima</h2>
           <p style="margin:4px 0 0;font-size:12px;opacity:.85">${_settings().NAMA_INSTANSI}</p>
         </div>
         <div style="padding:20px;font-size:13px;color:#333;line-height:1.7">
@@ -651,7 +651,7 @@ function _emailKonfirmasi(d, nomor, totalPeserta) {
 
 function _waKonfirmasi(d, nomor, totalPeserta) {
   const pesan =
-`✅ *LAPORAN JUMAT BERSIH DITERIMA*
+`✅ *KEGIATAN JUMAT BERSIH DITERIMA*
 ${_settings().NAMA_INSTANSI}
 ━━━━━━━━━━━━━━━━━━━━
 📄 *Nomor:* ${nomor}
@@ -709,7 +709,7 @@ function _kirimPengingat(tanggal, tahap) {
 `🔔 *${tahap.judul}*
 Yth. Ketua Jurusan/Kaprodi *${p.prodi}*
 
-Laporan Jumat Bersih tanggal *${tanggal}* belum masuk ke sistem SMART Champion.
+Kegiatan Jumat Bersih tanggal *${tanggal}* belum masuk ke sistem SMART Champion.
 Batas pengumpulan: *paling lambat Kamis sebelum Jumat berikutnya*.
 
 Akses form: ${_formUrl()}
@@ -733,18 +733,18 @@ _${S.NAMA_INSTANSI}_`;
 // Window pelaporan: Jumat (hari-H) s/d Kamis berikutnya. Pengingat tersebar dalam window;
 // status "terlambat" baru ditetapkan saat window ditutup (Jumat berikutnya pagi).
 // — Jumat (hari pelaksanaan): 3× pengingat
-function pengingatJumat1() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Laporan Jumat Bersih hari ini (1/3)' }); }
-function pengingatJumat2() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Laporan Jumat Bersih hari ini (2/3)' }); }
-function pengingatJumat3() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Laporan Jumat Bersih hari ini (3/3)' }); }
+function pengingatJumat1() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Kegiatan Jumat Bersih hari ini (1/3)' }); }
+function pengingatJumat2() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Kegiatan Jumat Bersih hari ini (2/3)' }); }
+function pengingatJumat3() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Kegiatan Jumat Bersih hari ini (3/3)' }); }
 // — Selasa: pengingat tengah window
-function pengingatSelasa() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Laporan Jumat Bersih minggu ini belum masuk' }); }
+function pengingatSelasa() { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT — Kegiatan Jumat Bersih minggu ini belum masuk' }); }
 // — Kamis: pengingat terakhir (hari terakhir window)
 function pengingatKamis()  { _kirimPengingat(_tanggalJumatIni(), { judul: 'PENGINGAT TERAKHIR — Batas pengumpulan hari ini (Kamis)' }); }
 
 // Dipanggil oleh trigger Jumat 07.00 — TUTUP window minggu lalu: notif terlambat + rekap ke admin
 function tutupMingguan() {
   const tanggal = _tanggalJumatLalu();
-  _kirimPengingat(tanggal, { judul: 'TERLAMBAT — Laporan Jumat Bersih minggu lalu belum masuk' });
+  _kirimPengingat(tanggal, { judul: 'TERLAMBAT — Kegiatan Jumat Bersih minggu lalu belum masuk' });
   const total = _getProdiMaster().length || 1;
   const belum = _prodiBelumLapor(tanggal);
   const sudah = total - belum.length;
